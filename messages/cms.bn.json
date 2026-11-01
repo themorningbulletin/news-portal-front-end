@@ -208,7 +208,7 @@
   },
   "media": {
     "upload": "ছবি আপলোড",
-    "uploadHint": "JPEG, PNG, WebP, AVIF বা GIF; সর্বোচ্চ ৮ MB।",
+    "uploadHint": "JPEG, PNG, WebP, AVIF বা GIF; সর্বোচ্চ ৪ MB।",
     "disabled": "মিডিয়া স্টোরেজ (Cloudinary) কনফিগার করা হয়নি, তাই আপলোড বন্ধ আছে।",
     "file": "ফাইল",
     "altBn": "বিকল্প লেখা (বাংলা)",

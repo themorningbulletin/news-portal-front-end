@@ -208,7 +208,7 @@
   },
   "media": {
     "upload": "Upload image",
-    "uploadHint": "JPEG, PNG, WebP, AVIF or GIF; up to 8 MB.",
+    "uploadHint": "JPEG, PNG, WebP, AVIF or GIF; up to 4 MB.",
     "disabled": "Media storage (Cloudinary) is not configured, so uploads are disabled.",
     "file": "File",
     "altBn": "Alt text (Bangla)",

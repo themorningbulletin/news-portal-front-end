@@ -17,6 +17,11 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  experimental: {
+    // Prerendering reads from a serverless API: fewer pages at once, so a build does not overload it.
+    staticGenerationMaxConcurrency: 2,
+    staticGenerationRetryCount: 3,
+  },
   turbopack: {
     rules: {
       "*.css": {

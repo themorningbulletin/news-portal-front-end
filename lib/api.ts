@@ -31,20 +31,29 @@ export class ApiUnavailableError extends Error {
   }
 }
 
+/** A serverless API can be cold or briefly overloaded: a build waits it out, a live request fails fast. */
+const IS_BUILD = process.env.NEXT_PHASE === "phase-production-build";
+const ATTEMPTS = IS_BUILD ? 5 : 2;
+const TIMEOUT_MS = IS_BUILD ? 30_000 : 10_000;
+const shouldRetry = (status?: number) => status === undefined || status === 429 || status >= 500;
+
 /** 404 becomes null; any other failure throws so it is never cached. */
 async function get<T>(path: string): Promise<T | null> {
-  let res: Response;
-  try {
-    res = await fetch(`${API}/api/v1${path}`, {
-      headers: { accept: "application/json", ...(INTERNAL_KEY ? { "x-internal-key": INTERNAL_KEY } : {}) },
-      signal: AbortSignal.timeout(10_000),
-    });
-  } catch {
-    throw new ApiUnavailableError(path);
+  for (let attempt = 1; ; attempt++) {
+    let res: Response | undefined;
+    try {
+      res = await fetch(`${API}/api/v1${path}`, {
+        headers: { accept: "application/json", ...(INTERNAL_KEY ? { "x-internal-key": INTERNAL_KEY } : {}) },
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+    } catch {
+      // Network failure or timeout: handled below as a missing status.
+    }
+    if (res?.status === 404) return null;
+    if (res?.ok) return (await res.json()) as T;
+    if (attempt >= ATTEMPTS || !shouldRetry(res?.status)) throw new ApiUnavailableError(path, res?.status);
+    await new Promise((r) => setTimeout(r, attempt * 1_000));
   }
-  if (res.status === 404) return null;
-  if (!res.ok) throw new ApiUnavailableError(path, res.status);
-  return (await res.json()) as T;
 }
 
 const q = (params: Record<string, string | number | undefined>) => {
