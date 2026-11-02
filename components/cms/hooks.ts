@@ -104,11 +104,11 @@ export interface CmsArticle {
   updatedAt: string;
   translations: { id: string; locale: "bn" | "en"; slug: string; title: string; status: string }[];
   checklist: { id: string; ok: boolean; blocking: boolean }[];
-  permissions: { canEdit: boolean; canPublish: boolean; canCurate: boolean; actions: string[] };
+  permissions: { canEdit: boolean; canPublish: boolean; canCurate: boolean; canDelete: boolean; actions: string[] };
 }
 
 export const staffName = (s: CmsStaff, locale: "bn" | "en") =>
-  s.author?.name?.[locale] || s.author?.name?.[locale === "bn" ? "en" : "bn"] || s.displayName || s.id;
+  s.author?.name?.[locale] || s.author?.name?.[locale === "bn" ? "en" : "bn"] || s.displayName || `${locale === "bn" ? "নাম দেওয়া হয়নি" : "No name set"} (${s.role})`;
 
 /** <input type="datetime-local"> works in local time; the API stores ISO instants. */
 export const toLocalInput = (iso: string | null | undefined) => {

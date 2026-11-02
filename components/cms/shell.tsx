@@ -22,6 +22,7 @@ const NAV: { href: string; key: string; permission: string }[] = [
   { href: "homepage", key: "homepage", permission: "homepage:manage" },
   { href: "pages", key: "pages", permission: "pages:manage" },
   { href: "users", key: "users", permission: "users:manage" },
+  { href: "roles", key: "roles", permission: "roles:manage" },
   { href: "ads", key: "ads", permission: "ads:manage" },
   { href: "audit", key: "audit", permission: "audit:read" },
   { href: "profile", key: "profile", permission: "article:create" },
@@ -33,7 +34,7 @@ export function CmsShell({ children }: { children: ReactNode }) {
   const locale = useLocale() as "bn" | "en";
   const pathname = usePathname();
   const { me, status } = useAuth();
-  const staff = me && (can(me, "dashboard:read") || can(me, "ads:manage"));
+  const staff = me && me.permissions.length > 0;
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuFor, setMenuFor] = useState(pathname);
   if (menuFor !== pathname) {

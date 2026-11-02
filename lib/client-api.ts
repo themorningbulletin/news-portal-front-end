@@ -10,7 +10,7 @@ export interface Me {
   id: string;
   email: string | null;
   displayName: string | null;
-  role: "reader" | "author" | "editor" | "admin" | "ad_manager" | "moderator";
+  role: string;
   canPublish: boolean;
   permissions: string[];
   author: { isPublic: boolean; slug: string | null; name: { bn?: string; en?: string }; bio: { bn?: string; en?: string } };

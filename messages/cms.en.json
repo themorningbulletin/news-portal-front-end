@@ -15,7 +15,8 @@
     "viewSite": "View site",
     "seo": "SEO dashboard",
     "calendar": "Content calendar",
-    "menu": "Menu"
+    "menu": "Menu",
+    "roles": "Roles & permissions"
   },
   "access": {
     "signInRequired": "Sign in to use the newsroom.",
@@ -190,7 +191,11 @@
       "autosave": "Autosave",
       "transition": "Status change",
       "restore": "Restore"
-    }
+    },
+    "uploading": "Uploading…",
+    "uploadFailed": "The image could not be uploaded. Check the file and try again.",
+    "addTagButton": "Add",
+    "addTagHelp": "Type a tag and press Enter or Add. It is created if it does not exist."
   },
   "toolbar": {
     "bold": "Bold",
@@ -204,11 +209,14 @@
     "linkPrompt": "Link address (https://… or /en/news/…)",
     "unlink": "Remove link",
     "undo": "Undo",
-    "redo": "Redo"
+    "redo": "Redo",
+    "image": "Image",
+    "imageUploading": "Uploading…",
+    "imageAltPrompt": "Describe the image (alt text) for people who cannot see it"
   },
   "media": {
     "upload": "Upload image",
-    "uploadHint": "JPEG, PNG, WebP, AVIF or GIF; up to 4 MB.",
+    "uploadHint": "JPEG, PNG, WebP, AVIF or GIF. Large photos are compressed automatically; GIFs up to 4 MB.",
     "disabled": "Media storage (Cloudinary) is not configured, so uploads are disabled.",
     "file": "File",
     "altBn": "Alt text (Bangla)",
@@ -237,7 +245,9 @@
     "add": "Add new",
     "stories": "Stories",
     "deleteTag": "Delete tag",
-    "inUse": "Tags in use cannot be deleted."
+    "inUse": "Tags in use cannot be deleted.",
+    "newTag": "New tag",
+    "addTag": "Add"
   },
   "homepage": {
     "intro": "Choose which sections appear on the homepage, in what order and with which layout. The lead story, top stories and breaking banner are set from each story’s homepage controls.",
@@ -262,7 +272,9 @@
       "editor": "Editor",
       "admin": "Admin",
       "ad_manager": "Ad manager",
-      "moderator": "Moderator"
+      "moderator": "Moderator",
+      "manager": "Manager",
+      "sub_admin": "Sub-admin"
     },
     "canPublish": "May publish own stories",
     "disabled": "Disabled",
@@ -273,7 +285,15 @@
     "bylineNameBn": "Byline name (Bangla)",
     "bylineNameEn": "Byline name (English)",
     "bioBn": "Bio (Bangla)",
-    "bioEn": "Bio (English)"
+    "bioEn": "Bio (English)",
+    "invite": "Add a user",
+    "inviteHelp": "Give a role by email. If there is no account, one is created and you get a link for them to choose a password.",
+    "inviteButton": "Add",
+    "inviteCreated": "An account was created for {email}.",
+    "inviteLinkHelp": "Send them this link. It is shown only once, and anyone holding it can set the password.",
+    "inviteLink": "Password link",
+    "copyLink": "Copy link",
+    "inviteExisting": "{email} already had an account; the role was updated."
   },
   "ads": {
     "intro": "The AdSense publisher id comes from the server environment (NEXT_PUBLIC_ADSENSE_CLIENT). Enter the AdSense slot id for each placement and switch it on or off here.",
@@ -425,6 +445,59 @@
     "breakingUntil": "Breaking banner until {time}",
     "pinnedUntil": "Pinned as lead until {time}",
     "endBreaking": "End breaking banner now",
-    "noControls": "No breaking banner or pinned lead is active."
+    "noControls": "No breaking banner or pinned lead is active.",
+    "delete": "Delete permanently",
+    "deleteConfirm": "“{title}” will be permanently deleted, with its version history and images used only by this story. This cannot be undone. Delete?"
+  },
+  "roles": {
+    "intro": "Decide who can do what. To give someone a role, go to Users. Changes take effect within half a minute.",
+    "people": "{count} people",
+    "custom": "Custom",
+    "changed": "Changed",
+    "view": "View",
+    "lockedNote": "This role is fixed and cannot be changed.",
+    "adminOnly": "admins only",
+    "reset": "Reset to default",
+    "resetConfirm": "This role's permissions will go back to their defaults. Continue?",
+    "deleteConfirm": "Delete the role “{name}”?",
+    "create": "Create a new role",
+    "createButton": "Create role",
+    "nameBn": "Name (Bangla)",
+    "nameEn": "Name (English)",
+    "groups": {
+      "content": "Stories",
+      "site": "Site",
+      "media": "Images",
+      "business": "Dashboard and ads",
+      "people": "People and security"
+    },
+    "about": {
+      "reader": "A reader; no newsroom access.",
+      "author": "Writes stories and submits them for publishing.",
+      "editor": "Edits and publishes all stories and runs the homepage.",
+      "manager": "Runs the whole newsroom, homepage and ads, but not user accounts.",
+      "sub_admin": "Everything a manager does, plus users and the audit log, but cannot make anyone an admin or sub-admin.",
+      "admin": "Full access.",
+      "ad_manager": "Manages advertising only.",
+      "moderator": "No permissions yet; add what you need.",
+      "custom": "{count} permissions"
+    },
+    "perm": {
+      "article_create": "Write stories and edit own drafts",
+      "article_edit_any": "Edit any story and use the SEO dashboard",
+      "article_publish": "Publish, schedule and unpublish stories",
+      "article_delete": "Permanently delete stories",
+      "homepage_manage": "Homepage, pins and breaking banners",
+      "taxonomy_manage": "Manage sections and tags",
+      "pages_manage": "Editorial pages (About and others)",
+      "media_upload": "Upload images",
+      "media_manage_any": "Edit images uploaded by others",
+      "dashboard_read": "See the dashboard",
+      "newsletter_read": "See newsletter subscribers",
+      "ads_manage": "Manage advertising",
+      "users_manage": "Add and manage users",
+      "audit_read": "See the audit log",
+      "roles_manage": "Change roles and permissions"
+    }
   }
 }

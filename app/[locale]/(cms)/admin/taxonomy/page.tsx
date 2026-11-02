@@ -99,6 +99,7 @@ export default function TaxonomyPage() {
   const manage = can(me, "taxonomy:manage");
   const cats = useApi<{ data: CmsCategory[] }>("/admin/categories");
   const [tagQ, setTagQ] = useState("");
+  const [newTag, setNewTag] = useState("");
   const tags = useApi<{ data: CmsTag[] }>(`/admin/tags${tagQ ? `?q=${encodeURIComponent(tagQ)}` : ""}`);
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [tagError, setTagError] = useState<string | null>(null);
@@ -154,6 +155,28 @@ export default function TaxonomyPage() {
           {t("common.search")}
           <input type="search" value={tagQ} onChange={(e) => setTagQ(e.target.value)} className={field} />
         </label>
+        <form
+          className="mt-3 flex items-end gap-2"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setTagError(null);
+            try {
+              await apiFetch("/admin/tags", { method: "POST", body: { name: { [locale]: newTag.trim() } } });
+              setNewTag("");
+              await tags.reload();
+            } catch (err) {
+              setTagError(err instanceof ApiError ? err.message : t("common.error"));
+            }
+          }}
+        >
+          <label className="min-w-0 flex-1 text-sm">
+            {t("taxonomy.newTag")}
+            <input value={newTag} maxLength={100} onChange={(e) => setNewTag(e.target.value)} className={field} />
+          </label>
+          <button type="submit" className={`${btnPrimary} shrink-0`} disabled={!newTag.trim()}>
+            + {t("taxonomy.addTag")}
+          </button>
+        </form>
         <ErrorNote message={tagError} />
         <ul className="mt-3 flex flex-wrap gap-2">
           {(tags.data?.data ?? []).map((tg) => (

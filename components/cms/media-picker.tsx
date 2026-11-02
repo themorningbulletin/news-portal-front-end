@@ -48,8 +48,8 @@ export function MediaPicker({ open, onClose, onSelect }: { open: boolean; onClos
                 }}
                 className="block w-full rounded border border-rule text-left hover:border-brand focus-visible:border-brand"
               >
-                <img src={m.url} alt={m.alt[locale] ?? ""} className="aspect-video w-full object-cover" loading="lazy" />
-                <span className="block truncate p-2 text-xs">{m.alt[locale] || <em className="text-breaking">{t("media.missingAlt")}</em>}</span>
+                <img src={m.url} alt={m.alt?.[locale] ?? ""} className="aspect-video w-full object-cover" loading="lazy" />
+                <span className="block truncate p-2 text-xs">{m.alt?.[locale] || <em className="text-breaking">{t("media.missingAlt")}</em>}</span>
               </button>
             </li>
           ))}

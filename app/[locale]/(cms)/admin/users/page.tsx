@@ -3,7 +3,8 @@
 import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { formatWhen, useApi } from "@/components/cms/hooks";
-import { btn, btnPrimary, ErrorNote, field, PageTitle } from "@/components/cms/shell";
+import { btn, btnPrimary, ErrorNote, field, PageTitle, Panel } from "@/components/cms/shell";
+import { useAuth } from "@/components/providers";
 import { apiFetch, ApiError } from "@/lib/client-api";
 
 interface User {
@@ -17,9 +18,91 @@ interface User {
   author?: { isPublic?: boolean; slug?: string; name?: { bn?: string; en?: string }; bio?: { bn?: string; en?: string } };
 }
 
-const ROLES = ["reader", "author", "editor", "admin", "ad_manager", "moderator"];
+interface RoleOption {
+  key: string;
+  label: string;
+  /** Roles a sub-admin may not hand out. */
+  managesUsers: boolean;
+}
 
-function UserRow({ user, onSaved }: { user: User; onSaved: () => void }) {
+function InviteForm({ roles, onDone }: { roles: RoleOption[]; onDone: () => void }) {
+  const t = useTranslations("cms");
+  const [email, setEmail] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [role, setRole] = useState("editor");
+  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<{ resetLink: string | null; email: string } | null>(null);
+  return (
+    <div className="mb-6">
+      <Panel title={t("users.invite")}>
+        <p className="mb-3 text-sm text-muted">{t("users.inviteHelp")}</p>
+        <form
+          className="grid gap-3 sm:grid-cols-3"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            setError(null);
+            setResult(null);
+            try {
+              const res = await apiFetch<{ data: { resetLink: string | null } }>("/admin/users/invite", {
+                method: "POST",
+                body: { email, role, ...(displayName.trim() ? { displayName: displayName.trim() } : {}) },
+              });
+              setResult({ resetLink: res.data.resetLink, email });
+              setEmail("");
+              setDisplayName("");
+              onDone();
+            } catch (err) {
+              setError(err instanceof ApiError ? err.message : t("common.error"));
+            }
+          }}
+        >
+          <label className="text-sm">
+            {t("users.email")}
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className={field} />
+          </label>
+          <label className="text-sm">
+            {t("users.name")}
+            <input value={displayName} maxLength={120} onChange={(e) => setDisplayName(e.target.value)} className={field} />
+          </label>
+          <label className="text-sm">
+            {t("users.role")}
+            <select value={role} onChange={(e) => setRole(e.target.value)} className={field}>
+              {roles.map((r) => (
+                <option key={r.key} value={r.key}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="sm:col-span-3">
+            <button type="submit" className={btnPrimary}>
+              {t("users.inviteButton")}
+            </button>
+          </div>
+        </form>
+        <ErrorNote message={error} />
+        {result && (
+          <div role="status" className="mt-3 rounded border border-rule p-3 text-sm">
+            {result.resetLink ? (
+              <>
+                <p className="font-semibold">{t("users.inviteCreated", { email: result.email })}</p>
+                <p className="mt-1 text-muted">{t("users.inviteLinkHelp")}</p>
+                <input readOnly value={result.resetLink} aria-label={t("users.inviteLink")} onFocus={(e) => e.target.select()} className={`${field} mt-2`} />
+                <button type="button" className={`${btn} mt-2`} onClick={() => void navigator.clipboard.writeText(result.resetLink!)}>
+                  {t("users.copyLink")}
+                </button>
+              </>
+            ) : (
+              <p>{t("users.inviteExisting", { email: result.email })}</p>
+            )}
+          </div>
+        )}
+      </Panel>
+    </div>
+  );
+}
+
+function UserRow({ user, roles, label, onSaved }: { user: User; roles: RoleOption[]; label: (key: string) => string; onSaved: () => void }) {
   const t = useTranslations("cms");
   const locale = useLocale();
   const [u, setU] = useState(user);
@@ -30,11 +113,11 @@ function UserRow({ user, onSaved }: { user: User; onSaved: () => void }) {
     <li className="py-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span>
-          <span className="font-semibold">{user.displayName ?? user.email}</span>
-          <span className="ml-2 text-sm text-muted">{user.email}</span>
+          <span className="font-semibold break-all">{user.displayName ?? user.email}</span>
+          <span className="ml-2 break-all text-sm text-muted">{user.email}</span>
         </span>
         <span className="flex items-center gap-3 text-sm">
-          {t(`users.roles.${user.role}`)}
+          {label(user.role)}
           {user.disabled && <span className="text-breaking">{t("users.disabled")}</span>}
           <span className="text-muted">{formatWhen(locale, user.lastLoginAt)}</span>
           <button type="button" className="text-link underline" aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -74,9 +157,10 @@ function UserRow({ user, onSaved }: { user: User; onSaved: () => void }) {
           <label className="text-sm">
             {t("users.role")}
             <select value={u.role} onChange={(e) => setU({ ...u, role: e.target.value })} className={field}>
-              {ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {t(`users.roles.${r}`)}
+              {!roles.some((r) => r.key === u.role) && <option value={u.role}>{label(u.role)}</option>}
+              {roles.map((r) => (
+                <option key={r.key} value={r.key}>
+                  {r.label}
                 </option>
               ))}
             </select>
@@ -134,6 +218,16 @@ function UserRow({ user, onSaved }: { user: User; onSaved: () => void }) {
 
 export default function UsersPage() {
   const t = useTranslations("cms");
+  const locale = useLocale() as "bn" | "en";
+  const { me } = useAuth();
+  const roleList = useApi<{ data: { roles: { key: string; builtin: boolean; name: { bn?: string; en?: string }; permissions: string[] }[] } }>("/admin/roles");
+  const allRoles: RoleOption[] = (roleList.data?.data.roles ?? []).map((r) => ({
+    key: r.key,
+    label: r.builtin ? t(`users.roles.${r.key}`) : r.name[locale] || r.name.bn || r.name.en || r.key,
+    managesUsers: r.permissions.includes("users:manage"),
+  }));
+  const assignable = allRoles.filter((r) => me?.role === "admin" || !r.managesUsers);
+  const roleLabel = (key: string) => allRoles.find((r) => r.key === key)?.label ?? key;
   const [q, setQ] = useState("");
   const [role, setRole] = useState("");
   const [page, setPage] = useState(1);
@@ -144,6 +238,7 @@ export default function UsersPage() {
   return (
     <div>
       <PageTitle>{t("nav.users")}</PageTitle>
+      <InviteForm roles={assignable} onDone={() => void reload()} />
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <label className="text-sm sm:col-span-2">
           {t("common.search")}
@@ -153,9 +248,9 @@ export default function UsersPage() {
           {t("users.role")}
           <select value={role} onChange={(e) => { setRole(e.target.value); setPage(1); }} className={field}>
             <option value="">{t("common.all")}</option>
-            {ROLES.map((r) => (
-              <option key={r} value={r}>
-                {t(`users.roles.${r}`)}
+            {allRoles.map((r) => (
+              <option key={r.key} value={r.key}>
+                {r.label}
               </option>
             ))}
           </select>
@@ -164,7 +259,7 @@ export default function UsersPage() {
       <ErrorNote message={error ? t("common.error") : null} />
       <ul className="divide-y divide-rule rounded-lg border border-rule bg-surface px-4">
         {(data?.data ?? []).map((u) => (
-          <UserRow key={u.id} user={u} onSaved={() => void reload()} />
+          <UserRow key={u.id} user={u} roles={assignable} label={roleLabel} onSaved={() => void reload()} />
         ))}
       </ul>
       {data && data.meta.totalPages > 1 && (

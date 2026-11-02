@@ -75,6 +75,100 @@ test("an editor signs in, writes, publishes and the story goes live", async ({ p
   await expect(page.locator("h1")).toHaveText(headline);
 });
 
+test("a large photo is compressed and uploaded from the editor, and the story can be deleted", async ({ page }) => {
+  page.on("dialog", (d) => void (d.type() === "prompt" ? d.accept("A rain chart") : d.accept()));
+  await page.goto("/en/login?next=/en/admin");
+  await page.getByLabel("Email", { exact: true }).fill(EMAIL);
+  await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.waitForURL((u) => u.pathname === "/en/admin");
+
+  await page.goto("/en/admin/articles/new");
+  await page.getByLabel("Headline").fill(`E2E image story ${Date.now()}`);
+  await page.getByRole("button", { name: "Create draft" }).click();
+  await expect(page).toHaveURL(/\/en\/admin\/articles\/[a-f0-9]{24}$/);
+  const id = page.url().split("/").pop()!;
+
+  // No Cloudinary in tests: the API call is answered with an existing library image, and its size is measured.
+  const library = await page.evaluate(async () => {
+    const res = await fetch("/api/v1/admin/media?limit=1");
+    return ((await res.json()) as { data: unknown[] }).data[0];
+  });
+  const uploads: Buffer[] = [];
+  await page.route("**/api/v1/admin/media", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    uploads.push(route.request().postDataBuffer()!);
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ data: library }) });
+  });
+
+  // Random noise compresses badly, so this PNG is far above the 4 MB upload limit.
+  const base64 = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 2800;
+    canvas.height = 1800;
+    const ctx = canvas.getContext("2d")!;
+    const img = ctx.createImageData(canvas.width, canvas.height);
+    for (let i = 0; i < img.data.length; i++) img.data[i] = i % 4 === 3 ? 255 : Math.random() * 255;
+    ctx.putImageData(img, 0, 0);
+    return canvas.toDataURL("image/png").split(",")[1]!;
+  });
+  const photo = { name: "photo.png", mimeType: "image/png", buffer: Buffer.from(base64, "base64") };
+  expect(photo.buffer.length).toBeGreaterThan(4_000_000);
+
+  await page.locator('label:has-text("Upload image") input[type=file]').setInputFiles(photo);
+  await expect(page.getByLabel("Image alt text").or(page.getByRole("button", { name: "Remove image" })).first()).toBeVisible({ timeout: 45_000 });
+  expect(uploads).toHaveLength(1);
+  expect(uploads[0]!.length).toBeLessThan(3_700_000);
+  expect(uploads[0]!.toString("latin1")).toContain("image/webp");
+
+  const chooser = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Image", exact: true }).click();
+  await (await chooser).setFiles(photo);
+  const inBody = page.getByRole("textbox", { name: "Body" }).locator('img[alt="A rain chart"]');
+  await expect(inBody).toBeVisible({ timeout: 45_000 });
+  expect(uploads).toHaveLength(2);
+
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+  await page.reload();
+  await expect(inBody).toBeVisible();
+
+  await page.getByRole("button", { name: "Delete permanently" }).click();
+  await page.waitForURL((u) => u.pathname === "/en/admin/articles");
+  const gone = await page.evaluate(async (a) => (await fetch(`/api/v1/admin/articles/${a}`)).status, id);
+  expect(gone).toBe(404);
+});
+
+test("an admin creates a role and adds a tag from the editor", async ({ page }) => {
+  page.on("dialog", (d) => void d.accept());
+  await page.goto("/en/login?next=/en/admin");
+  await page.getByLabel("Email", { exact: true }).fill(EMAIL);
+  await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.waitForURL((u) => u.pathname === "/en/admin");
+
+  await page.goto("/en/admin/roles");
+  await expect(page.getByText("Sub-admin", { exact: true })).toBeVisible();
+  const name = `Copy desk ${Date.now()}`;
+  await page.locator("form").getByLabel("Name (English)").fill(name);
+  await page.locator("#new-article\\:create").check();
+  await page.getByRole("button", { name: "Create role" }).click();
+  await expect(page.getByText(name, { exact: true })).toBeVisible();
+
+  await page.goto("/en/admin/users");
+  await expect(page.getByRole("heading", { name: "Add a user" })).toBeVisible();
+  await expect(page.locator("form").first().locator("select option", { hasText: name })).toHaveCount(1);
+
+  await page.goto("/en/admin/articles/new");
+  await page.getByLabel("Headline").fill(`E2E tag story ${Date.now()}`);
+  await page.getByRole("button", { name: "Create draft" }).click();
+  await expect(page).toHaveURL(/\/en\/admin\/articles\/[a-f0-9]{24}$/);
+  const tag = `tag${Date.now()}`;
+  await page.getByPlaceholder("Add a tag").fill(tag);
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: `Delete: ${tag}` })).toBeVisible();
+});
+
 test("newsroom pages are protected on the server before anything renders", async ({ page, request }) => {
   // Anonymous: redirected to sign-in, and the page HTML is never served.
   const res = await request.get("/en/admin/articles", { maxRedirects: 0 });
@@ -99,6 +193,10 @@ test("a signed-in reader without newsroom permission gets 403", async ({ page })
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL((u) => u.pathname === "/en/account");
+  // What protects the area is the page served; Next.js may report 200 while first rendering the rewrite.
+  await page.goto("/en/admin");
+  await expect(page.getByRole("heading", { name: "You do not have access to this area" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Dashboard" })).toHaveCount(0);
   const res = await page.goto("/en/admin");
   expect(res?.status()).toBe(403);
   await expect(page.getByRole("heading", { name: "You do not have access to this area" })).toBeVisible();
@@ -131,7 +229,7 @@ test("newsroom screens fit a phone screen without sideways scrolling", async ({ 
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL((u) => u.pathname === "/en/admin");
-  for (const path of ["/en/admin", "/en/admin/articles", "/en/admin/seo", "/en/admin/calendar", "/en/admin/media", "/en/admin/taxonomy", "/en/admin/users"]) {
+  for (const path of ["/en/admin", "/en/admin/articles", "/en/admin/seo", "/en/admin/calendar", "/en/admin/media", "/en/admin/taxonomy", "/en/admin/users", "/en/admin/roles"]) {
     await page.goto(path);
     await expect(page.locator("#cms-main h1")).toBeVisible();
     await page.waitForTimeout(1000);

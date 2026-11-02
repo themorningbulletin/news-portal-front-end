@@ -1,14 +1,16 @@
 "use client";
 
+import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useTranslations } from "next-intl";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { uploadImage } from "./upload";
 
 /**
  * Restricted rich text: paragraphs, two heading levels, emphasis, lists,
- * quotes and links. The server sanitizes the HTML again on every save, so this
+ * quotes, links and uploaded images. The server sanitizes the HTML again on every save, so this
  * editor is a convenience, not the security boundary.
  */
 export function RichText({
@@ -17,14 +19,18 @@ export function RichText({
   readOnly = false,
   label,
   lang,
+  onUploadError,
 }: {
   value: string;
   onChange: (html: string) => void;
   readOnly?: boolean;
   label: string;
   lang: string;
+  onUploadError?: () => void;
 }) {
   const t = useTranslations("cms.toolbar");
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
   const editor = useEditor({
     immediatelyRender: false,
     editable: !readOnly,
@@ -38,6 +44,7 @@ export function RichText({
         link: false,
         underline: false,
       }),
+      Image.configure({ allowBase64: false }),
       Link.configure({
         openOnClick: false,
         autolink: true,
@@ -120,6 +127,38 @@ export function RichText({
           const href = window.prompt(t("linkPrompt"))?.trim();
           if (href && /^(https?:\/\/|mailto:|\/(?!\/))/i.test(href)) editor.chain().focus().extendMarkRange("link").setLink({ href }).run();
         })}
+        <button
+          type="button"
+          onClick={() => fileInput.current?.click()}
+          disabled={readOnly || uploading}
+          aria-label={t("image")}
+          title={t("image")}
+          className="inline-flex h-9 items-center justify-center rounded px-2 text-sm font-semibold hover:bg-surface-2 disabled:opacity-40"
+        >
+          {uploading ? t("imageUploading") : `🖼 ${t("image")}`}
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          hidden
+          accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (!file) return;
+            const alt = window.prompt(t("imageAltPrompt"))?.trim();
+            if (alt === undefined) return;
+            setUploading(true);
+            try {
+              const media = await uploadImage(file, lang === "bn" ? { alt_bn: alt } : { alt_en: alt });
+              editor.chain().focus().setImage({ src: media.url, alt, width: media.width, height: media.height }).run();
+            } catch {
+              onUploadError?.();
+            } finally {
+              setUploading(false);
+            }
+          }}
+        />
         <span className="mx-1 w-px bg-rule" aria-hidden="true" />
         <button type="button" onClick={() => editor.chain().focus().undo().run()} disabled={readOnly} aria-label={t("undo")} title={t("undo")} className="h-9 rounded px-2 hover:bg-surface-2">
           ↶

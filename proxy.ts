@@ -27,6 +27,7 @@ export function negotiate(header: string | null): string {
  */
 const ADMIN_AREAS: [RegExp, string][] = [
   [/^\/admin\/users(\/|$)/, "users:manage"],
+  [/^\/admin\/roles(\/|$)/, "roles:manage"],
   [/^\/admin\/audit(\/|$)/, "audit:read"],
   [/^\/admin\/ads(\/|$)/, "ads:manage"],
   [/^\/admin\/homepage(\/|$)/, "homepage:manage"],
@@ -41,8 +42,6 @@ export function requiredPermission(pathWithoutLocale: string): string | null {
   for (const [re, perm] of ADMIN_AREAS) if (re.test(pathWithoutLocale)) return perm;
   return pathWithoutLocale.startsWith("/admin") ? "*staff" : null;
 }
-
-const STAFF_PERMISSIONS = ["dashboard:read", "ads:manage"];
 
 async function permissionsFor(request: NextRequest): Promise<string[] | null> {
   const api = (process.env.API_INTERNAL_URL ?? "http://localhost:4000").replace(/\/$/, "");
@@ -76,7 +75,7 @@ async function guardNewsroom(request: NextRequest, locale: string, rest: string)
   const permissions = await permissionsFor(request);
   if (permissions === null) return NextResponse.redirect(loginUrl, 307);
 
-  const allowed = perm === "*staff" ? STAFF_PERMISSIONS.some((p) => permissions.includes(p)) : permissions.includes(perm);
+  const allowed = perm === "*staff" ? permissions.length > 0 : permissions.includes(perm);
   if (!allowed) {
     const res = NextResponse.rewrite(new URL(`/${locale}/no-access`, request.url), { status: 403 });
     res.headers.set("Cache-Control", "private, no-store");

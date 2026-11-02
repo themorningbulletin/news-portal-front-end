@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { useApi, type CmsMedia } from "@/components/cms/hooks";
 import { btn, btnPrimary, ErrorNote, field, PageTitle, Panel } from "@/components/cms/shell";
+import { compressImage } from "@/components/cms/upload";
 import { apiFetch, ApiError } from "@/lib/client-api";
 
 function MediaEditor({ media, onSaved }: { media: CmsMedia; onSaved: (m: CmsMedia) => void }) {
@@ -58,11 +59,11 @@ function MediaEditor({ media, onSaved }: { media: CmsMedia; onSaved: (m: CmsMedi
           <div key={l} className="space-y-2">
             <label className="block text-sm">
               {t(l === "bn" ? "media.altBn" : "media.altEn")}
-              <input lang={l} value={m.alt[l] ?? ""} onChange={(e) => setM({ ...m, alt: { ...m.alt, [l]: e.target.value } })} className={field} maxLength={300} />
+              <input lang={l} value={m.alt?.[l] ?? ""} onChange={(e) => setM({ ...m, alt: { ...m.alt, [l]: e.target.value } })} className={field} maxLength={300} />
             </label>
             <label className="block text-sm">
               {t(l === "bn" ? "media.captionBn" : "media.captionEn")}
-              <input lang={l} value={m.caption[l] ?? ""} onChange={(e) => setM({ ...m, caption: { ...m.caption, [l]: e.target.value } })} className={field} maxLength={500} />
+              <input lang={l} value={m.caption?.[l] ?? ""} onChange={(e) => setM({ ...m, caption: { ...m.caption, [l]: e.target.value } })} className={field} maxLength={500} />
             </label>
           </div>
         ))}
@@ -109,6 +110,8 @@ export default function MediaPage() {
                 setUploading(true);
                 setError(null);
                 try {
+                  const file = form.get("file");
+                  if (file instanceof File) form.set("file", await compressImage(file));
                   await apiFetch("/admin/media", { method: "POST", form });
                   (e.target as HTMLFormElement).reset();
                   await reload();
@@ -179,9 +182,9 @@ export default function MediaPage() {
         {items.map((m) => (
           <li key={m.id} className="overflow-hidden rounded border border-rule bg-surface">
             <button type="button" onClick={() => setSelected(m)} className="block w-full text-left">
-              <img src={m.url} alt={m.alt[locale] ?? ""} className="aspect-video w-full object-cover" loading="lazy" style={{ objectPosition: `${m.focalX}% ${m.focalY}%` }} />
+              <img src={m.url} alt={m.alt?.[locale] ?? ""} className="aspect-video w-full object-cover" loading="lazy" style={{ objectPosition: `${m.focalX}% ${m.focalY}%` }} />
               <span className="block p-2 text-xs">
-                <span className="block truncate">{m.alt[locale] || <em className="text-breaking">{t("media.missingAlt")}</em>}</span>
+                <span className="block truncate">{m.alt?.[locale] || <em className="text-breaking">{t("media.missingAlt")}</em>}</span>
                 <span className="text-muted">{t("media.usage", { count: m.usageCount })}</span>
               </span>
             </button>

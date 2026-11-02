@@ -10,6 +10,7 @@ import { paths } from "@/lib/urls";
 import { formatWhen, fromLocalInput, staffName, toLocalInput, useApi, type CmsArticle, type CmsCategory, type CmsMedia, type CmsStaff, type CmsTag } from "./hooks";
 import { MediaPicker } from "./media-picker";
 import { RichText } from "./rich-text";
+import { uploadImage } from "./upload";
 import { SeoPanel } from "./seo-panel";
 import { btn, btnPrimary, ErrorNote, field, Panel, StatusBadge } from "./shell";
 
@@ -102,6 +103,7 @@ export function ArticleEditor({ id }: { id: string }) {
   const [markUpdated, setMarkUpdated] = useState(false);
   const [scheduleAt, setScheduleAt] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [loadedImage, setImage] = useState<CmsMedia | null>(null);
   const [note, setNote] = useState("");
   const [showRevisions, setShowRevisions] = useState(false);
@@ -241,6 +243,30 @@ export function ArticleEditor({ id }: { id: string }) {
     }
   };
 
+  /** Adds the typed tag: an existing one with this name is reused, otherwise it is created. */
+  const addTag = async () => {
+    const name = tagQuery.trim();
+    if (!name || !form) return;
+    const lang = article?.locale ?? "bn";
+    const match = (tagSearch.data?.data ?? []).find((tg) => tg.name[lang as "bn" | "en"]?.toLowerCase() === name.toLowerCase());
+    try {
+      let id = match?.id;
+      if (!id) {
+        const res = await apiFetch<{ data: CmsTag }>("/admin/tags", { method: "POST", body: { name: { [lang]: name } } });
+        setKnownTags((m) => new Map(m).set(res.data.id, res.data));
+        id = res.data.id;
+      }
+      if (!form.tags.includes(id)) update("tags", [...form.tags, id]);
+      setTagQuery("");
+    } catch (err) {
+      const existing = err instanceof ApiError ? (err.details as { id?: string } | undefined)?.id : undefined;
+      if (existing) {
+        if (!form.tags.includes(existing)) update("tags", [...form.tags, existing]);
+        setTagQuery("");
+      } else setError(t("common.error"));
+    }
+  };
+
   const categories = cats.data?.data ?? [];
   const staffList = staff.data?.data ?? [];
   const otherLocale = article?.locale === "bn" ? "en" : "bn";
@@ -299,6 +325,23 @@ export function ArticleEditor({ id }: { id: string }) {
           >
             {t("tools.duplicate")}
           </button>
+          {article.permissions.canDelete && (
+            <button
+              type="button"
+              className={`${btn} border-breaking text-breaking`}
+              onClick={async () => {
+                if (!window.confirm(t("tools.deleteConfirm", { title: article.title }))) return;
+                try {
+                  await apiFetch(`/admin/articles/${article.id}`, { method: "DELETE" });
+                  router.push(paths.admin(uiLocale, "articles"));
+                } catch {
+                  setError(t("common.error"));
+                }
+              }}
+            >
+              {t("tools.delete")}
+            </button>
+          )}
           {editable && (
             <button type="button" className={btnPrimary} onClick={() => void save("manual")} disabled={saveState === "saving"}>
               {t("common.save")}
@@ -333,7 +376,7 @@ export function ArticleEditor({ id }: { id: string }) {
           </label>
           <div>
             <p className="mb-1 text-sm font-semibold">{t("editor.body")}</p>
-            <RichText value={form.body} onChange={(html) => update("body", html)} readOnly={!editable} label={t("editor.body")} lang={lang} />
+            <RichText value={form.body} onChange={(html) => update("body", html)} readOnly={!editable} label={t("editor.body")} lang={lang} onUploadError={() => setError(t("editor.uploadFailed"))} />
           </div>
 
           <Panel title={t("editor.seo")}>
@@ -554,7 +597,24 @@ export function ArticleEditor({ id }: { id: string }) {
                     <label className="sr-only" htmlFor="tag-search">
                       {t("editor.addTag")}
                     </label>
-                    <input id="tag-search" value={tagQuery} onChange={(e) => setTagQuery(e.target.value)} placeholder={t("editor.addTag")} className={field} />
+                    <div className="flex gap-2">
+                      <input
+                        id="tag-search"
+                        value={tagQuery}
+                        onChange={(e) => setTagQuery(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          void addTag();
+                        }}
+                        placeholder={t("editor.addTag")}
+                        className={`${field} mt-0 min-w-0 flex-1`}
+                      />
+                      <button type="button" className={`${btn} shrink-0`} disabled={!tagQuery.trim()} onClick={() => void addTag()}>
+                        + {t("editor.addTagButton")}
+                      </button>
+                    </div>
+                    <p className="mt-1 text-xs text-muted">{t("editor.addTagHelp")}</p>
                     {tagQuery.trim().length > 0 && (
                       <ul className="mt-1 max-h-48 overflow-y-auto rounded border border-rule text-sm">
                         {(tagSearch.data?.data ?? [])
@@ -571,21 +631,7 @@ export function ArticleEditor({ id }: { id: string }) {
                             </li>
                           ))}
                         <li>
-                          <button
-                            type="button"
-                            className="block w-full px-3 py-2 text-left font-semibold hover:bg-surface-2"
-                            onClick={async () => {
-                              try {
-                                const res = await apiFetch<{ data: CmsTag }>("/admin/tags", { method: "POST", body: { name: { [lang]: tagQuery.trim() } } });
-                                setKnownTags((m) => new Map(m).set(res.data.id, res.data));
-                                update("tags", [...form.tags, res.data.id]);
-                              } catch (err) {
-                                const existing = err instanceof ApiError ? (err.details as { id?: string } | undefined)?.id : undefined;
-                                if (existing && !form.tags.includes(existing)) update("tags", [...form.tags, existing]);
-                              }
-                              setTagQuery("");
-                            }}
-                          >
+                          <button type="button" className="block w-full px-3 py-2 text-left font-semibold hover:bg-surface-2" onClick={() => void addTag()}>
                             + {t("editor.newTag", { name: tagQuery.trim() })}
                           </button>
                         </li>
@@ -617,12 +663,37 @@ export function ArticleEditor({ id }: { id: string }) {
           <Panel title={t("editor.image")}>
             {image ? (
               <figure>
-                <img src={image.url} alt={image.alt[lang] ?? ""} className="aspect-video w-full rounded object-cover" style={{ objectPosition: `${image.focalX}% ${image.focalY}%` }} />
-                <figcaption className="mt-1 text-xs text-muted">{image.alt[lang] || t("media.missingAlt")}</figcaption>
+                <img src={image.url} alt={image.alt?.[lang] ?? ""} className="aspect-video w-full rounded object-cover" style={{ objectPosition: `${image.focalX}% ${image.focalY}%` }} />
+                <figcaption className="mt-1 text-xs text-muted">{image.alt?.[lang] || t("media.missingAlt")}</figcaption>
               </figure>
             ) : null}
             {editable && (
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
+                <label className={`${btnPrimary} cursor-pointer has-[:focus-visible]:outline-2 ${uploadingImage ? "pointer-events-none opacity-50" : ""}`}>
+                  {uploadingImage ? t("editor.uploading") : t("media.upload")}
+                  <input
+                    type="file"
+                    className="sr-only"
+                    disabled={uploadingImage}
+                    accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      if (!file) return;
+                      setUploadingImage(true);
+                      setError(null);
+                      try {
+                        const media = await uploadImage(file);
+                        setImage(media);
+                        update("featuredImage", media.id);
+                      } catch {
+                        setError(t("editor.uploadFailed"));
+                      } finally {
+                        setUploadingImage(false);
+                      }
+                    }}
+                  />
+                </label>
                 <button type="button" className={btn} onClick={() => setPickerOpen(true)}>
                   {t("editor.chooseImage")}
                 </button>
@@ -637,11 +708,11 @@ export function ArticleEditor({ id }: { id: string }) {
               <div className="mt-3 space-y-2">
                 <label className="block text-sm">
                   {t("editor.imageAlt")}
-                  <input lang={lang} value={form.imageAlt} onChange={(e) => update("imageAlt", e.target.value)} readOnly={!editable} className={field} placeholder={image?.alt[lang] ?? ""} />
+                  <input lang={lang} value={form.imageAlt} onChange={(e) => update("imageAlt", e.target.value)} readOnly={!editable} className={field} placeholder={image?.alt?.[lang] ?? ""} />
                 </label>
                 <label className="block text-sm">
                   {t("editor.imageCaption")}
-                  <input lang={lang} value={form.imageCaption} onChange={(e) => update("imageCaption", e.target.value)} readOnly={!editable} className={field} placeholder={image?.caption[lang] ?? ""} />
+                  <input lang={lang} value={form.imageCaption} onChange={(e) => update("imageCaption", e.target.value)} readOnly={!editable} className={field} placeholder={image?.caption?.[lang] ?? ""} />
                 </label>
                 <label className="block text-sm">
                   {t("editor.imageCredit")}
