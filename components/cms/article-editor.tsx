@@ -754,6 +754,9 @@ export function ArticleEditor({ id }: { id: string }) {
                   <input type="datetime-local" value={form.breakingUntil} disabled={!editable} onChange={(e) => update("breakingUntil", e.target.value)} className={field} />
                 </label>
               </div>
+              <Link href={paths.admin(uiLocale, "curation")} className="mt-3 inline-block text-sm text-link underline">
+                {t("curation.openPage")}
+              </Link>
             </Panel>
           )}
 

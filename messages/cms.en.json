@@ -16,7 +16,8 @@
     "seo": "SEO dashboard",
     "calendar": "Content calendar",
     "menu": "Menu",
-    "roles": "Roles & permissions"
+    "roles": "Roles & permissions",
+    "curation": "Homepage controls"
   },
   "access": {
     "signInRequired": "Sign in to use the newsroom.",
@@ -247,7 +248,18 @@
     "deleteTag": "Delete tag",
     "inUse": "Tags in use cannot be deleted.",
     "newTag": "New tag",
-    "addTag": "Add"
+    "addTag": "Add",
+    "howTitle": "How to add a new tag",
+    "how1": "A tag is a specific topic of a story, such as “Monsoon” or “Budget 2026”. It is narrower than a section (such as National).",
+    "how2": "Give it a name in both languages. Bangla stories show the Bangla name and English stories the English one; without a name in a language, the tag does not show on that language's site.",
+    "how3": "Press “+ Add”. The address (slug) is created automatically, and a tag with the same name is not created twice.",
+    "how4": "While writing, you can also type in the editor's tag box and press Enter (only the story's language is filled; add the other name here later).",
+    "how5": "Click a tag to rename it or add the other language. × deletes it, unless a story still uses it.",
+    "tagNameBn": "Bangla name",
+    "tagNameEn": "English name",
+    "tagExists": "A tag with this name already exists.",
+    "editTag": "Rename",
+    "missingHint": "Tags with a red dashed border are missing a name in one language. Click to add it."
   },
   "homepage": {
     "intro": "Choose which sections appear on the homepage, in what order and with which layout. The lead story, top stories and breaking banner are set from each story’s homepage controls.",
@@ -499,5 +511,48 @@
       "audit_read": "See the audit log",
       "roles_manage": "Change roles and permissions"
     }
+  },
+  "curation": {
+    "intro": "Pins, top stories, editor's picks and breaking banners in one place. # is the order: the most recent choice is #1. A green label means readers see it on the homepage now. You can still change these from each story's editor.",
+    "language": "Language",
+    "section": "Section",
+    "filterTitle": "Filter by headline",
+    "leadTitle": "Lead story (pins)",
+    "leadHelp": "Only #1 shows. When its time ends or it is removed, #2 takes over.",
+    "noPins": "No story is pinned right now.",
+    "autoLead": "With no pin, the lead is chosen automatically (latest top story or latest story). {title}",
+    "onHomeNow": "On the homepage now",
+    "waiting": "Waiting (#{rank})",
+    "until": "until {when}",
+    "untilLabel": "Until",
+    "saveTime": "Save time",
+    "bringToTop": "Make #1",
+    "unpin": "Unpin",
+    "remove": "Remove",
+    "topTitle": "Top stories",
+    "topHelp": "Four places on the homepage; the first four in this order show (excluding the lead).",
+    "picksTitle": "Editor's picks",
+    "picksHelp": "Four places on the homepage; the first four in this order show.",
+    "showingAsLead": "Showing as the lead story (a story never appears twice)",
+    "onHomeAt": "On the homepage at {n}",
+    "notShown": "Not shown now (no room)",
+    "autoFilled": "Added automatically to fill places",
+    "none": "Nothing chosen.",
+    "breakingTitle": "Breaking banners",
+    "breakingHelp": "Shown under the menu on every page; removed automatically when the time ends.",
+    "noBreaking": "No breaking banner right now.",
+    "endBreaking": "End banner",
+    "addTitle": "Add a story",
+    "searchStory": "Search published stories",
+    "searchHint": "Type a few letters of the headline",
+    "noResults": "Nothing found.",
+    "pin": "Pin",
+    "pinUntil": "Pin until",
+    "breakingUntil": "Banner until",
+    "makeBreaking": "Make breaking banner",
+    "notLiveTitle": "Not visible yet",
+    "notLiveHelp": "These stories have homepage settings but are not published. They take effect once published.",
+    "openPage": "See all homepage controls on one page →",
+    "showingInTop": "Showing in top stories (a story never appears twice)"
   }
 }

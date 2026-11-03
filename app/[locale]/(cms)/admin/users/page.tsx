@@ -121,7 +121,7 @@ function UserRow({ user, roles, label, onSaved }: { user: User; roles: RoleOptio
           {user.disabled && <span className="text-breaking">{t("users.disabled")}</span>}
           <span className="text-muted">{formatWhen(locale, user.lastLoginAt)}</span>
           <button type="button" className="text-link underline" aria-expanded={open} onClick={() => setOpen(!open)}>
-            {t("common.edit")}
+            {open ? t("common.close") : t("common.edit")}
           </button>
         </span>
       </div>
@@ -204,6 +204,9 @@ function UserRow({ user, roles, label, onSaved }: { user: User; roles: RoleOptio
             <div className="mt-2 flex items-center gap-3">
               <button type="submit" className={btnPrimary}>
                 {t("common.save")}
+              </button>
+              <button type="button" className={btn} onClick={() => setOpen(false)}>
+                {t("common.close")}
               </button>
               <span role="status" className="text-sm text-muted">
                 {saved ? t("common.saved") : ""}

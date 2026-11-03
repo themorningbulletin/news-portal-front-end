@@ -31,6 +31,7 @@ const ADMIN_AREAS: [RegExp, string][] = [
   [/^\/admin\/audit(\/|$)/, "audit:read"],
   [/^\/admin\/ads(\/|$)/, "ads:manage"],
   [/^\/admin\/homepage(\/|$)/, "homepage:manage"],
+  [/^\/admin\/curation(\/|$)/, "homepage:manage"],
   [/^\/admin\/pages(\/|$)/, "pages:manage"],
   [/^\/admin\/seo(\/|$)/, "article:edit_any"],
   [/^\/admin\/(articles|media|taxonomy|calendar|profile|preview)(\/|$)/, "article:create"],

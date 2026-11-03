@@ -93,7 +93,7 @@ function RoleCard({ role, catalog, label, onChanged }: { role: RoleRow; catalog:
           {role.customized && <span className="ml-2 rounded bg-surface-2 px-2 py-0.5 text-xs">{t("roles.changed")}</span>}
         </span>
         <button type="button" className="text-sm text-link underline" aria-expanded={open} onClick={() => setOpen(!open)}>
-          {role.locked ? t("roles.view") : t("common.edit")}
+          {open ? t("common.close") : role.locked ? t("roles.view") : t("common.edit")}
         </button>
       </div>
       <p className="mt-1 text-sm text-muted">{role.builtin ? t(`roles.about.${role.key}`) : t("roles.about.custom", { count: role.permissions.length })}</p>
@@ -139,10 +139,18 @@ function RoleCard({ role, catalog, label, onChanged }: { role: RoleRow; catalog:
                   {t("common.delete")}
                 </button>
               )}
+              <button type="button" className={btn} onClick={() => setOpen(false)}>
+                {t("common.close")}
+              </button>
               <span role="status" className="text-sm text-muted">
                 {saved ? t("common.saved") : ""}
               </span>
             </div>
+          )}
+          {role.locked && (
+            <button type="button" className={`${btn} mt-3`} onClick={() => setOpen(false)}>
+              {t("common.close")}
+            </button>
           )}
         </div>
       )}

@@ -19,6 +19,7 @@ const NAV: { href: string; key: string; permission: string }[] = [
   { href: "calendar", key: "calendar", permission: "article:create" },
   { href: "seo", key: "seo", permission: "article:edit_any" },
   { href: "taxonomy", key: "taxonomy", permission: "article:create" },
+  { href: "curation", key: "curation", permission: "homepage:manage" },
   { href: "homepage", key: "homepage", permission: "homepage:manage" },
   { href: "pages", key: "pages", permission: "pages:manage" },
   { href: "users", key: "users", permission: "users:manage" },

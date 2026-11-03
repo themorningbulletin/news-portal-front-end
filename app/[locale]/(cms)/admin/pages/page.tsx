@@ -96,6 +96,9 @@ export default function InfoPagesAdmin() {
             {open?.key === key && (
               <div className="mt-4">
                 <PageEditor key={`${key}-${open.locale}`} pageKey={key} locale={open.locale} onSaved={() => void list.reload()} />
+                <button type="button" className={`${btn} mt-3`} onClick={() => setOpen(null)}>
+                  {t("common.close")}
+                </button>
               </div>
             )}
           </Panel>

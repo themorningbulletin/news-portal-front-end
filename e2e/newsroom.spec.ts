@@ -169,6 +169,64 @@ test("an admin creates a role and adds a tag from the editor", async ({ page }) 
   await expect(page.getByRole("button", { name: `Delete: ${tag}` })).toBeVisible();
 });
 
+test("homepage controls page pins a story, shows its place and moves it to #1", async ({ page }) => {
+  await page.goto("/en/login?next=/en/admin");
+  await page.getByLabel("Email", { exact: true }).fill(EMAIL);
+  await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.waitForURL((u) => u.pathname === "/en/admin");
+
+  await page.goto("/en/admin/curation");
+  await page.getByLabel("Language").selectOption("en");
+  const leadPanel = page.locator("section", { has: page.getByRole("heading", { name: "Lead story (pins)" }) });
+  const pinFirst = async (query: string, nth = 0) => {
+    await page.getByLabel("Search published stories").fill(query);
+    const row = page.locator("li", { has: page.getByRole("button", { name: "Make breaking banner" }) }).nth(nth);
+    const title = (await row.getByRole("link").first().textContent())!.trim();
+    await row.getByRole("button", { name: /^(Pin|Make #1)$/ }).click();
+    await expect(leadPanel.getByRole("link", { name: title })).toBeVisible();
+    return title;
+  };
+  const first = await pinFirst("the");
+  await expect(leadPanel.locator("li", { hasText: first }).getByText("On the homepage now")).toBeVisible();
+  const second = await pinFirst("the", 1);
+  expect(second).not.toBe(first);
+  await expect(leadPanel.locator("li", { hasText: second }).getByText("On the homepage now")).toBeVisible();
+  await expect(leadPanel.locator("li", { hasText: first }).getByText("Waiting (#2)")).toBeVisible();
+
+  await leadPanel.locator("li", { hasText: first }).getByRole("button", { name: "Make #1" }).click();
+  await expect(leadPanel.locator("li", { hasText: first }).getByText("On the homepage now")).toBeVisible();
+  for (const title of [first, second]) await leadPanel.locator("li", { hasText: title }).getByRole("button", { name: "Unpin" }).click();
+  await expect(leadPanel.getByText("No story is pinned right now.")).toBeVisible();
+});
+
+test("the sign-in form can show the password and send a reset link", async ({ page }) => {
+  await page.goto("/en/login");
+  const password = page.getByLabel("Password", { exact: true });
+  await password.fill("secret-pass-123");
+  await expect(password).toHaveAttribute("type", "password");
+  await page.getByRole("button", { name: "Show password" }).click();
+  await expect(password).toHaveAttribute("type", "text");
+  await page.getByRole("button", { name: "Hide password" }).click();
+  await expect(password).toHaveAttribute("type", "password");
+
+  await page.getByLabel("Email", { exact: true }).fill(EMAIL);
+  await page.getByRole("button", { name: "Forgot password?" }).click();
+  await expect(page.getByLabel("Email", { exact: true })).toHaveValue(EMAIL);
+  await page.getByRole("button", { name: "Send reset link" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "password reset link is on its way" })).toBeVisible();
+  // The Auth emulator records the email Firebase would have sent.
+  const codes = (await (await fetch(`${EMULATOR}/emulator/v1/projects/demo-khoka-news/oobCodes`)).json()) as { oobCodes: { email: string; requestType: string }[] };
+  expect(codes.oobCodes.some((c) => c.email === EMAIL && c.requestType === "PASSWORD_RESET")).toBe(true);
+
+  // An unknown address gets the same answer, so accounts cannot be discovered.
+  await page.getByLabel("Email", { exact: true }).fill(`nobody-${Date.now()}@example.test`);
+  await page.getByRole("button", { name: "Send reset link" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "password reset link is on its way" })).toBeVisible();
+  await page.getByRole("button", { name: "← Back to sign in" }).click();
+  await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
+});
+
 test("newsroom pages are protected on the server before anything renders", async ({ page, request }) => {
   // Anonymous: redirected to sign-in, and the page HTML is never served.
   const res = await request.get("/en/admin/articles", { maxRedirects: 0 });
@@ -229,7 +287,7 @@ test("newsroom screens fit a phone screen without sideways scrolling", async ({ 
   await page.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL((u) => u.pathname === "/en/admin");
-  for (const path of ["/en/admin", "/en/admin/articles", "/en/admin/seo", "/en/admin/calendar", "/en/admin/media", "/en/admin/taxonomy", "/en/admin/users", "/en/admin/roles"]) {
+  for (const path of ["/en/admin", "/en/admin/articles", "/en/admin/seo", "/en/admin/calendar", "/en/admin/media", "/en/admin/taxonomy", "/en/admin/users", "/en/admin/roles", "/en/admin/curation"]) {
     await page.goto(path);
     await expect(page.locator("#cms-main h1")).toBeVisible();
     await page.waitForTimeout(1000);

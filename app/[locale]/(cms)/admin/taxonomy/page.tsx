@@ -21,7 +21,7 @@ const fromCategory = (c: CmsCategory): Draft => ({
   isActive: c.isActive,
 });
 
-function CategoryForm({ initial, id, categories, onDone }: { initial: Draft; id?: string; categories: CmsCategory[]; onDone: () => void }) {
+function CategoryForm({ initial, id, categories, onDone, onClose }: { initial: Draft; id?: string; categories: CmsCategory[]; onDone: () => void; onClose: () => void }) {
   const t = useTranslations("cms");
   const [d, setD] = useState(initial);
   const [error, setError] = useState<string | null>(null);
@@ -84,9 +84,14 @@ function CategoryForm({ initial, id, categories, onDone }: { initial: Draft; id?
       </label>
       <div className="sm:col-span-2">
         <ErrorNote message={error} />
-        <button type="submit" className={`${btnPrimary} mt-2`}>
-          {t("common.save")}
-        </button>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button type="submit" className={btnPrimary}>
+            {t("common.save")}
+          </button>
+          <button type="button" className={btn} onClick={onClose}>
+            {t("common.close")}
+          </button>
+        </div>
       </div>
     </form>
   );
@@ -99,7 +104,8 @@ export default function TaxonomyPage() {
   const manage = can(me, "taxonomy:manage");
   const cats = useApi<{ data: CmsCategory[] }>("/admin/categories");
   const [tagQ, setTagQ] = useState("");
-  const [newTag, setNewTag] = useState("");
+  const [newTag, setNewTag] = useState({ bn: "", en: "" });
+  const [editTag, setEditTag] = useState<{ id: string; bn: string; en: string } | null>(null);
   const tags = useApi<{ data: CmsTag[] }>(`/admin/tags${tagQ ? `?q=${encodeURIComponent(tagQ)}` : ""}`);
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [tagError, setTagError] = useState<string | null>(null);
@@ -120,7 +126,7 @@ export default function TaxonomyPage() {
       >
         {editing === "new" && (
           <div className="mb-4 rounded border border-rule p-3">
-            <CategoryForm initial={empty} categories={categories} onDone={() => { setEditing(null); void cats.reload(); }} />
+            <CategoryForm initial={empty} categories={categories} onDone={() => { setEditing(null); void cats.reload(); }} onClose={() => setEditing(null)} />
           </div>
         )}
         <ul className="divide-y divide-rule">
@@ -134,15 +140,15 @@ export default function TaxonomyPage() {
                 <span className="flex items-center gap-3 text-sm text-muted">
                   {c.articleCount} {t("taxonomy.stories")}
                   {manage && (
-                    <button type="button" className="text-link underline" onClick={() => setEditing(editing === c.id ? null : c.id)}>
-                      {t("common.edit")}
+                    <button type="button" className="text-link underline" aria-expanded={editing === c.id} onClick={() => setEditing(editing === c.id ? null : c.id)}>
+                      {editing === c.id ? t("common.close") : t("common.edit")}
                     </button>
                   )}
                 </span>
               </div>
               {editing === c.id && (
                 <div className="mt-3 rounded border border-rule p-3">
-                  <CategoryForm initial={fromCategory(c)} id={c.id} categories={categories} onDone={() => { setEditing(null); void cats.reload(); }} />
+                  <CategoryForm initial={fromCategory(c)} id={c.id} categories={categories} onDone={() => { setEditing(null); void cats.reload(); }} onClose={() => setEditing(null)} />
                 </div>
               )}
             </li>
@@ -155,33 +161,88 @@ export default function TaxonomyPage() {
           {t("common.search")}
           <input type="search" value={tagQ} onChange={(e) => setTagQ(e.target.value)} className={field} />
         </label>
+        <details className="mt-3 rounded border border-rule bg-paper p-3 text-sm" open>
+          <summary className="cursor-pointer font-semibold">{t("taxonomy.howTitle")}</summary>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-ink-2">
+            <li>{t("taxonomy.how1")}</li>
+            <li>{t("taxonomy.how2")}</li>
+            <li>{t("taxonomy.how3")}</li>
+            <li>{t("taxonomy.how4")}</li>
+            <li>{t("taxonomy.how5")}</li>
+          </ol>
+        </details>
         <form
-          className="mt-3 flex items-end gap-2"
+          className="mt-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
           onSubmit={async (e) => {
             e.preventDefault();
             setTagError(null);
+            const name = { ...(newTag.bn.trim() ? { bn: newTag.bn.trim() } : {}), ...(newTag.en.trim() ? { en: newTag.en.trim() } : {}) };
             try {
-              await apiFetch("/admin/tags", { method: "POST", body: { name: { [locale]: newTag.trim() } } });
-              setNewTag("");
+              await apiFetch("/admin/tags", { method: "POST", body: { name } });
+              setNewTag({ bn: "", en: "" });
               await tags.reload();
             } catch (err) {
-              setTagError(err instanceof ApiError ? err.message : t("common.error"));
+              setTagError(err instanceof ApiError && err.status === 409 ? t("taxonomy.tagExists") : err instanceof ApiError ? err.message : t("common.error"));
             }
           }}
         >
-          <label className="min-w-0 flex-1 text-sm">
-            {t("taxonomy.newTag")}
-            <input value={newTag} maxLength={100} onChange={(e) => setNewTag(e.target.value)} className={field} />
+          <label className="min-w-0 text-sm">
+            {t("taxonomy.tagNameBn")}
+            <input lang="bn" value={newTag.bn} maxLength={60} onChange={(e) => setNewTag({ ...newTag, bn: e.target.value })} className={field} placeholder="যেমন: বর্ষা" />
           </label>
-          <button type="submit" className={`${btnPrimary} shrink-0`} disabled={!newTag.trim()}>
+          <label className="min-w-0 text-sm">
+            {t("taxonomy.tagNameEn")}
+            <input lang="en" value={newTag.en} maxLength={60} onChange={(e) => setNewTag({ ...newTag, en: e.target.value })} className={field} placeholder="e.g. Monsoon" />
+          </label>
+          <button type="submit" className={`${btnPrimary} shrink-0`} disabled={!newTag.bn.trim() && !newTag.en.trim()}>
             + {t("taxonomy.addTag")}
           </button>
         </form>
         <ErrorNote message={tagError} />
+        {(tags.data?.data ?? []).some((tg) => !tg.name.bn || !tg.name.en) && <p className="mt-3 text-xs text-muted">{t("taxonomy.missingHint")}</p>}
+        {editTag && (
+          <form
+            className="mt-3 grid gap-2 rounded border border-rule p-3 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setTagError(null);
+              try {
+                await apiFetch(`/admin/tags/${editTag.id}`, { method: "PATCH", body: { name: { bn: editTag.bn.trim(), en: editTag.en.trim() } } });
+                setEditTag(null);
+                await tags.reload();
+              } catch (err) {
+                setTagError(err instanceof ApiError && err.status === 409 ? t("taxonomy.tagExists") : err instanceof ApiError ? err.message : t("common.error"));
+              }
+            }}
+          >
+            <label className="min-w-0 text-sm">
+              {t("taxonomy.tagNameBn")}
+              <input lang="bn" value={editTag.bn} maxLength={60} onChange={(e) => setEditTag({ ...editTag, bn: e.target.value })} className={field} />
+            </label>
+            <label className="min-w-0 text-sm">
+              {t("taxonomy.tagNameEn")}
+              <input lang="en" value={editTag.en} maxLength={60} onChange={(e) => setEditTag({ ...editTag, en: e.target.value })} className={field} />
+            </label>
+            <button type="submit" className={btnPrimary}>
+              {t("common.save")}
+            </button>
+            <button type="button" className={btn} onClick={() => setEditTag(null)}>
+              {t("common.close")}
+            </button>
+          </form>
+        )}
         <ul className="mt-3 flex flex-wrap gap-2">
           {(tags.data?.data ?? []).map((tg) => (
-            <li key={tg.id} className="flex items-center gap-2 rounded-full border border-rule-strong px-3 py-1 text-sm">
-              <span lang="bn">{tg.name.bn ?? "—"}</span> / <span lang="en">{tg.name.en ?? "—"}</span>
+            <li key={tg.id} className={`flex items-center gap-2 rounded-full border px-3 py-1 text-sm ${!tg.name.bn || !tg.name.en ? "border-dashed border-breaking" : "border-rule-strong"}`}>
+              {manage ? (
+                <button type="button" className="hover:underline" title={t("taxonomy.editTag")} onClick={() => setEditTag({ id: tg.id, bn: tg.name.bn ?? "", en: tg.name.en ?? "" })}>
+                  <span lang="bn">{tg.name.bn ?? "—"}</span> / <span lang="en">{tg.name.en ?? "—"}</span>
+                </button>
+              ) : (
+                <span>
+                  <span lang="bn">{tg.name.bn ?? "—"}</span> / <span lang="en">{tg.name.en ?? "—"}</span>
+                </span>
+              )}
               {manage && (
                 <button
                   type="button"
