@@ -68,7 +68,7 @@ export function SiteHeader({ locale, categories }: { locale: Locale; categories:
         <div className="mx-auto flex max-w-7xl items-stretch px-2 sm:px-4">
           {/* Sections scroll horizontally on small screens (the full list is one tap away); on large
               screens they wrap and each one opens its subsections on hover or keyboard focus. */}
-          <ul className="flex flex-1 gap-1 overflow-x-auto py-1 [scrollbar-width:none] lg:flex-wrap lg:overflow-visible">
+          <ul className="flex flex-1 gap-1 overflow-x-auto py-1 scrollbar-none lg:flex-wrap lg:overflow-visible">
             <li>
               <Link href={paths.latest(locale)} className="inline-flex min-h-11 items-center whitespace-nowrap rounded px-3 text-[0.9375rem] font-semibold hover:bg-surface-2">
                 {t("latest")}
@@ -122,7 +122,7 @@ export function BreakingTicker({ locale, stories }: { locale: Locale; stories: A
     <section aria-label={t("breakingLabel")} className="border-b border-breaking/30 bg-breaking/10">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-2 sm:px-6">
         <span className="shrink-0 rounded bg-breaking px-2 py-1 text-xs font-bold uppercase text-breaking-ink">{t("breaking")}</span>
-        <ul className="flex gap-6 overflow-x-auto text-sm font-semibold [scrollbar-width:thin]">
+        <ul className="flex gap-6 overflow-x-auto text-sm font-semibold scrollbar-thin">
           {stories.map((s) => (
             <li key={s.id} className="whitespace-nowrap">
               <Link href={paths.article(locale, s.slug)} className="hover:underline">
