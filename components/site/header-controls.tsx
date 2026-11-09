@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { setAlternateHref, useAlternateHref, useAuth } from "@/components/providers";
@@ -105,6 +106,13 @@ export function AccountButton() {
   const { me, status, setMe } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const [openedOn, setOpenedOn] = useState(pathname);
+  // Choosing a page (or going back/forward) closes the menu.
+  if (open && openedOn !== pathname) {
+    setOpen(false);
+    setOpenedOn(pathname);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -135,7 +143,10 @@ export function AccountButton() {
         type="button"
         aria-expanded={open}
         aria-haspopup="menu"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpenedOn(pathname);
+          setOpen((v) => !v);
+        }}
         className={`${cls} border border-rule-strong hover:bg-surface-2`}
       >
         {t("account")}
@@ -143,11 +154,11 @@ export function AccountButton() {
       {open && (
         <div role="menu" className="absolute right-0 z-40 mt-2 w-56 rounded-md border border-rule bg-surface p-1 shadow-card">
           <p className="truncate px-3 py-2 text-xs text-muted">{me.email}</p>
-          <Link role="menuitem" href={paths.account(locale)} className="block rounded px-3 py-2 text-sm hover:bg-surface-2">
+          <Link role="menuitem" href={paths.account(locale)} onClick={() => setOpen(false)} className="block rounded px-3 py-2 text-sm hover:bg-surface-2">
             {t("account")}
           </Link>
           {staff && (
-            <Link role="menuitem" href={paths.admin(locale)} className="block rounded px-3 py-2 text-sm hover:bg-surface-2">
+            <Link role="menuitem" href={paths.admin(locale)} onClick={() => setOpen(false)} className="block rounded px-3 py-2 text-sm hover:bg-surface-2">
               {t("admin")}
             </Link>
           )}

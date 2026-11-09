@@ -33,5 +33,6 @@ export function clientMessages(locale: Locale) {
     archive: m.archive,
     errors: m.errors,
     footer: m.footer,
+    prayer: m.prayer,
   };
 }

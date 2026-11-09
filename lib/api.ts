@@ -11,6 +11,7 @@ import type {
   EditorialPage,
   Homepage,
   PageMeta,
+  SocialKey,
   Tag,
 } from "./types";
 
@@ -214,6 +215,7 @@ export async function getRecentSlugs(locale: Locale, limit = 30): Promise<string
 
 export interface SiteConfig {
   features: { newsletter: boolean; mediaUploads: boolean; aiAssist: boolean; comments: boolean };
+  social: Partial<Record<SocialKey, string>>;
 }
 
 export async function getSiteConfig(): Promise<SiteConfig> {
@@ -223,6 +225,7 @@ export async function getSiteConfig(): Promise<SiteConfig> {
   return (
     (await get<{ data: SiteConfig }>(`/config`))?.data ?? {
       features: { newsletter: false, mediaUploads: false, aiAssist: false, comments: false },
+      social: {},
     }
   );
 }

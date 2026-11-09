@@ -39,7 +39,7 @@ export async function CategoryView({ rawLocale, rawSlug, page }: { rawLocale: st
   return (
     <>
       <AlternateLink href={category.alternates[other] ? paths.category(other, category.alternates[other]!) : null} />
-      <div className="mx-auto max-w-4xl">
+      <div>
         <Breadcrumbs locale={locale} items={crumbs} />
         <div className="mt-4">
           <PageHeader title={category.name} description={category.description || t("categoryDescription", { name: category.name })}>

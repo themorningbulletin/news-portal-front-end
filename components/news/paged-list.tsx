@@ -45,11 +45,16 @@ export async function PagedList({
   if (res.data.length === 0) return <EmptyState title={t("noStories")} />;
   return (
     <>
-      <div>
+      {/* One column on phones, two side by side from tablet width up; the ad spans both. */}
+      <div className="grid gap-x-8 md:grid-cols-2">
         {res.data.map((s, i) => (
           <Fragment key={s.id}>
             <StoryRow locale={locale} story={s} as="h2" />
-            {adPlacement && i === 5 && <AdSlot placement={adPlacement} />}
+            {adPlacement && i === 5 && (
+              <div className="empty:hidden md:col-span-2">
+                <AdSlot placement={adPlacement} />
+              </div>
+            )}
           </Fragment>
         ))}
       </div>

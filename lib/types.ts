@@ -90,8 +90,17 @@ export interface Homepage {
   explainers: ArticleCard[];
   visual: ArticleCard[];
   opinion: ArticleCard[];
-  sections: { category: Category; variant: "grid" | "list" | "feature"; items: ArticleCard[] }[];
+  sections: HomeBlock[];
 }
+
+export type HomeVariant = "feature" | "side" | "center" | "trio" | "grid" | "list" | "mosaic";
+export type HomeWidth = 12 | 9 | 8 | 6 | 4 | 3 | 2;
+/** One homepage block, in the order and width the editors chose (12 columns per row). */
+export type HomeBlock =
+  | { kind: "section"; category: Category; variant: HomeVariant; width: HomeWidth; items: ArticleCard[] }
+  | { kind: "ad"; width: HomeWidth };
+
+export type SocialKey = "facebook" | "x" | "youtube" | "instagram" | "linkedin" | "tiktok" | "whatsapp" | "telegram";
 
 export interface AdPlacement {
   key: string;

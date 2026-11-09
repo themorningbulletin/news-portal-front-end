@@ -11,7 +11,7 @@ import { paths } from "@/lib/urls";
 
 export const ensureStatic = "navigation";
 
-const KEYS = ["about", "contact", "editorial-policy", "corrections", "privacy", "terms"];
+const KEYS = ["about", "contact", "editorial-policy", "corrections", "privacy", "terms", "advertise"];
 
 export function generateStaticParams() {
   return KEYS.map((key) => ({ key }));

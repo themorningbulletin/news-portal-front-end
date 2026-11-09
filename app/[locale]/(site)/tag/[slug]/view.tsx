@@ -34,7 +34,7 @@ export async function TagView({ rawLocale, rawSlug, page }: { rawLocale: string;
   return (
     <>
       <AlternateLink href={tag.alternates[other] ? paths.tag(other, tag.alternates[other]!) : null} />
-      <div className="mx-auto max-w-4xl">
+      <div>
         <Breadcrumbs locale={locale} items={[{ name: getT(locale, "nav")("topics"), path: paths.topics(locale) }, { name: tag.name }]} />
         <div className="mt-4">
           <PageHeader title={t("tagTitle", { name: tag.name })} description={t("tagDescription", { name: tag.name })} />

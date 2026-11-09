@@ -49,19 +49,26 @@ test("an editor signs in, writes, publishes and the story goes live", async ({ p
   expect(cookies.find((c) => c.name === "khoka_session")?.httpOnly).toBe(true);
   expect(await page.evaluate(() => document.cookie)).not.toContain("khoka_session");
 
+  // The whole story is written on one page before anything is saved.
   const headline = `E2E bridge plan approved ${Date.now()}`;
   await page.goto("/en/admin/articles/new");
-  await page.getByLabel("Headline").fill(headline);
-  await page.getByRole("button", { name: "Create draft" }).click();
-  await expect(page).toHaveURL(/\/en\/admin\/articles\/[a-f0-9]{24}$/);
-
+  const languages = page.getByRole("group", { name: "Language" });
+  await languages.getByRole("button", { name: "Bangla" }).click();
+  await expect(languages.locator('[aria-current="true"]')).toHaveText("Bangla");
+  await languages.getByRole("button", { name: "English" }).click();
+  await page.getByRole("textbox", { name: "Headline", exact: true }).fill(headline);
   await page.getByLabel("Summary").fill("A summary that is long enough to satisfy the newsroom checklist.");
   const body = page.getByRole("textbox", { name: "Body" });
   await body.click();
   await page.keyboard.type("The council approved the plan after a public consultation. Work will begin once funding is confirmed and contractors are selected.");
+  await page.getByRole("button", { name: "Centre" }).click();
+  await expect(body.locator('p[style*="text-align: center"]')).toHaveCount(1);
   await page.getByLabel("Section").selectOption({ label: "Economy" });
-  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await page.getByRole("button", { name: "Save draft" }).first().click();
+  await expect(page).toHaveURL(/\/en\/admin\/articles\/[a-f0-9]{24}$/);
   await expect(page.getByRole("status").filter({ hasText: "Saved" })).toBeVisible();
+  // Still the same page: nothing typed was lost.
+  await expect(page.getByRole("textbox", { name: "Headline", exact: true })).toHaveValue(headline);
 
   await page.getByRole("button", { name: "Publish", exact: true }).click();
   await expect(page.getByText("Published", { exact: true }).first()).toBeVisible();
@@ -70,9 +77,20 @@ test("an editor signs in, writes, publishes and the story goes live", async ({ p
   const viewLive = page.getByRole("link", { name: "View on site" });
   const href = await viewLive.getAttribute("href");
   expect(href).toMatch(/^\/en\/news\//);
+  const storyUrl = page.url();
+
+  // The Bangla tab starts the translation with the same section.
+  await page.getByRole("group", { name: "Language" }).getByRole("button", { name: "Bangla +" }).click();
+  await page.waitForURL(/\/en\/admin\/articles\/new\?translationOf=[a-f0-9]{24}&locale=bn$/);
+  await expect(page.getByLabel("Section").locator("option:checked")).toHaveText("অর্থনীতি");
+  await page.getByRole("group", { name: "Language" }).getByRole("button", { name: "English" }).click();
+  await page.waitForURL(storyUrl);
+
   const res = await page.goto(href!);
   expect(res?.status()).toBe(200);
   await expect(page.locator("h1")).toHaveText(headline);
+  await expect(page.locator(".prose-news p").first()).toHaveAttribute("style", /text-align:\s*center/);
+  await expect(page.getByRole("link", { name: "Share on Facebook" })).toHaveAttribute("href", /facebook\.com\/sharer/);
 });
 
 test("a large photo is compressed and uploaded from the editor, and the story can be deleted", async ({ page }) => {
@@ -84,8 +102,8 @@ test("a large photo is compressed and uploaded from the editor, and the story ca
   await page.waitForURL((u) => u.pathname === "/en/admin");
 
   await page.goto("/en/admin/articles/new");
-  await page.getByLabel("Headline").fill(`E2E image story ${Date.now()}`);
-  await page.getByRole("button", { name: "Create draft" }).click();
+  await page.getByRole("textbox", { name: "Headline", exact: true }).fill(`E2E image story ${Date.now()}`);
+  await page.getByRole("button", { name: "Save draft" }).first().click();
   await expect(page).toHaveURL(/\/en\/admin\/articles\/[a-f0-9]{24}$/);
   const id = page.url().split("/").pop()!;
 
@@ -160,8 +178,8 @@ test("an admin creates a role and adds a tag from the editor", async ({ page }) 
   await expect(page.locator("form").first().locator("select option", { hasText: name })).toHaveCount(1);
 
   await page.goto("/en/admin/articles/new");
-  await page.getByLabel("Headline").fill(`E2E tag story ${Date.now()}`);
-  await page.getByRole("button", { name: "Create draft" }).click();
+  await page.getByRole("textbox", { name: "Headline", exact: true }).fill(`E2E tag story ${Date.now()}`);
+  await page.getByRole("button", { name: "Save draft" }).first().click();
   await expect(page).toHaveURL(/\/en\/admin\/articles\/[a-f0-9]{24}$/);
   const tag = `tag${Date.now()}`;
   await page.getByPlaceholder("Add a tag").fill(tag);

@@ -69,6 +69,7 @@ const DEMO_PLACEMENTS: AdPlacement[] = [
   { key: "article_inline", slotId: "demo", format: "rectangle", minHeight: 250 },
   { key: "sidebar", slotId: "demo", format: "rectangle", minHeight: 250 },
   { key: "footer", slotId: "demo", format: "horizontal", minHeight: 90 },
+  { key: "sticky_bottom", slotId: "demo", format: "horizontal", minHeight: 90 },
 ];
 const DEMO_SIZE: Record<string, string> = {
   header: "728×90 / 320×50",
@@ -77,6 +78,7 @@ const DEMO_SIZE: Record<string, string> = {
   article_inline: "300×250 / Responsive",
   sidebar: "300×250",
   footer: "728×90 / 320×50",
+  sticky_bottom: "728×90 / 320×50",
 };
 
 export function AdsProvider({
@@ -202,6 +204,95 @@ export function ConsentSettingsLink({ label }: { label: string }) {
     <button type="button" onClick={reopen} className="text-left hover:underline">
       {label}
     </button>
+  );
+}
+
+/** Closed by the reader: stays closed for the rest of this visit. */
+const stickyClosed = createBrowserValue<boolean>(() => {
+  try {
+    return sessionStorage.getItem("stickyAdClosed") === "1";
+  } catch {
+    return false;
+  }
+}, true);
+
+/**
+ * The "sticky_bottom" placement: a slim ad fixed to the bottom of the screen that
+ * stays while the page scrolls. It never covers content (a spacer of the same
+ * height is added at the end of the page), stays under the consent banner, can
+ * be closed by the reader, and is left out of print and focus mode.
+ */
+export function StickyAd() {
+  const { client, placements } = useAds();
+  const t = useTranslations("ads");
+  const p = placements.get("sticky_bottom");
+  const closed = stickyClosed.use();
+  const show = Boolean(client && p && !closed);
+  useEffect(() => {
+    if (!show || client === "demo") return;
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch {
+      // Blocked or failed: the bar stays empty.
+    }
+  }, [show, client]);
+  // Slim by design: at most 100px (60px on phones), whatever is saved.
+  const height = p ? Math.min(Math.max(p.minHeight, 50), 100) : 0;
+  // Floating buttons (prayer times) sit above the bar while it is shown.
+  useEffect(() => {
+    if (!show) return;
+    const root = document.documentElement.style;
+    root.setProperty("--sticky-ad-space", `${height}px`);
+    root.setProperty("--sticky-ad-space-sm", "60px");
+    return () => {
+      root.removeProperty("--sticky-ad-space");
+      root.removeProperty("--sticky-ad-space-sm");
+    };
+  }, [show, height]);
+  if (!show || !p) return null;
+  const bar = "h-[var(--sticky-ad-h)] max-sm:h-[60px]";
+  return (
+    <div className="no-print focus-hide" style={{ ["--sticky-ad-h" as string]: `${height}px` }}>
+      <div aria-hidden="true" className={bar} />
+      <aside aria-label={t("label")} className={`fixed inset-x-0 bottom-0 z-40 border-t border-rule bg-surface/95 shadow-card backdrop-blur ${bar}`}>
+        <div className="relative mx-auto flex h-full max-w-7xl items-center justify-center px-10">
+          {client === "demo" ? (
+            <div className="flex h-full w-full max-w-[728px] flex-col items-center justify-center border-x-2 border-dashed border-accent/60 bg-accent/10 text-center">
+              <span className="text-sm font-semibold text-ink-2">{t("demo")}</span>
+              <span className="text-xs text-muted">
+                {t("places.sticky_bottom")} · {DEMO_SIZE.sticky_bottom}
+              </span>
+            </div>
+          ) : (
+            <ins
+              className="adsbygoogle"
+              style={{ display: "inline-block", width: "100%", maxWidth: 728, height: "100%" }}
+              data-ad-client={client!}
+              data-ad-slot={p.slotId}
+              data-ad-format={p.format === "fluid" ? "fluid" : p.format}
+              data-full-width-responsive="true"
+            />
+          )}
+          <span className="absolute left-2 top-1 text-[0.625rem] uppercase tracking-wider text-muted">{t("label")}</span>
+          <button
+            type="button"
+            aria-label={t("close")}
+            title={t("close")}
+            className="absolute right-1 top-1 inline-flex h-8 w-8 items-center justify-center rounded-full text-lg text-muted hover:bg-surface-2 hover:text-ink"
+            onClick={() => {
+              try {
+                sessionStorage.setItem("stickyAdClosed", "1");
+              } catch {
+                // Closed for this page only.
+              }
+              stickyClosed.notify();
+            }}
+          >
+            ×
+          </button>
+        </div>
+      </aside>
+    </div>
   );
 }
 

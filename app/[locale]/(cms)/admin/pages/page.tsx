@@ -5,9 +5,11 @@ import { useState } from "react";
 import { formatWhen, useApi } from "@/components/cms/hooks";
 import { RichText } from "@/components/cms/rich-text";
 import { btn, btnPrimary, ErrorNote, field, PageTitle, Panel } from "@/components/cms/shell";
+import { SOCIAL_LABEL, SOCIAL_ORDER, SocialIcon } from "@/components/site/social-icons";
 import { apiFetch, ApiError } from "@/lib/client-api";
+import type { SocialKey } from "@/lib/types";
 
-const KEYS = ["about", "contact", "editorial-policy", "corrections", "privacy", "terms"] as const;
+const KEYS = ["about", "contact", "editorial-policy", "corrections", "privacy", "terms", "advertise"] as const;
 interface PageDoc {
   key: string;
   locale: "bn" | "en";
@@ -66,6 +68,66 @@ function PageEditor({ pageKey, locale, onSaved }: { pageKey: string; locale: "bn
   );
 }
 
+/** Profile links shown as icons in the site footer; an empty box hides that icon. */
+function SocialLinks() {
+  const t = useTranslations("cms");
+  const { data } = useApi<{ data: Partial<Record<SocialKey, string>> }>("/admin/settings/social");
+  const [edited, setLinks] = useState<Partial<Record<SocialKey, string>> | null>(null);
+  const links = edited ?? data?.data ?? {};
+  const [state, setState] = useState<"" | "saved">("");
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <Panel title={t("pages.social")}>
+      <p className="mb-3 text-sm text-muted">{t("pages.socialIntro")}</p>
+      <form
+        className="grid gap-3 sm:grid-cols-2"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setError(null);
+          try {
+            const body = Object.fromEntries(SOCIAL_ORDER.map((k) => [k, (links[k] ?? "").trim()]));
+            await apiFetch("/admin/settings/social", { method: "PUT", body });
+            setState("saved");
+          } catch (err) {
+            setError(err instanceof ApiError && err.code === "validation_failed" ? t("pages.socialInvalid") : t("common.saveFailed"));
+          }
+        }}
+      >
+        {SOCIAL_ORDER.map((k) => (
+          <label key={k} className="text-sm">
+            <span className="flex items-center gap-2">
+              <SocialIcon name={k} />
+              {SOCIAL_LABEL[k]}
+            </span>
+            <input
+              type="url"
+              inputMode="url"
+              placeholder={k === "whatsapp" ? "https://wa.me/8801XXXXXXXXX" : k === "telegram" ? "https://t.me/…" : `https://…`}
+              value={links[k] ?? ""}
+              onChange={(e) => {
+                setLinks({ ...links, [k]: e.target.value });
+                setState("");
+              }}
+              className={field}
+            />
+          </label>
+        ))}
+        <div className="sm:col-span-2">
+          <ErrorNote message={error} />
+          <div className="flex items-center gap-3">
+            <button type="submit" className={btnPrimary}>
+              {t("common.save")}
+            </button>
+            <span role="status" className="text-sm text-muted">
+              {state === "saved" ? t("common.saved") : ""}
+            </span>
+          </div>
+        </div>
+      </form>
+    </Panel>
+  );
+}
+
 export default function InfoPagesAdmin() {
   const t = useTranslations("cms");
   const footer = useTranslations("footer.pages");
@@ -79,6 +141,7 @@ export default function InfoPagesAdmin() {
       <PageTitle>{t("nav.pages")}</PageTitle>
       <p className="mb-4 max-w-3xl text-sm text-ink-2">{t("pages.intro")}</p>
       <div className="space-y-3">
+        <SocialLinks />
         {KEYS.map((key) => (
           <Panel key={key} title={footer(key)}>
             <div className="flex flex-wrap gap-3">

@@ -28,7 +28,7 @@ export async function DayView({ rawLocale, rawDate, page }: { rawLocale: string;
   return (
     <>
       <AlternateLink href={paths.archiveDay(otherLocale(locale), date)} />
-      <div className="mx-auto max-w-4xl">
+      <div>
         <Breadcrumbs locale={locale} items={[{ name: t("title"), path: paths.archive(locale) }, { name: formatDay(locale, date) }]} />
         <div className="mt-4">
           <PageHeader title={t("dayTitle", { date: formatDay(locale, date) })} />

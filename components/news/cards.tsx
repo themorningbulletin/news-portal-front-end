@@ -17,19 +17,21 @@ function Kicker({ locale, story }: { locale: Locale; story: ArticleCard }) {
   return story.category ? <span className="kicker">{story.category.name}</span> : null;
 }
 
-/** The single most prominent story: large image, large headline, deck. */
+/** The single most prominent story: picture first (on top on phones, on the left otherwise), then headline and deck. */
 export function LeadStory({ locale, story }: { locale: Locale; story: ArticleCard }) {
   return (
-    <article className="grid gap-4 md:grid-cols-[3fr_2fr] md:gap-6">
-      <Link href={paths.article(locale, story.slug)} className="card-link block md:order-2" tabIndex={-1} aria-hidden="true">
-        {story.image && <StoryImage image={story.image} sizes="(min-width: 1280px) 720px, (min-width: 768px) 58vw, 100vw" preload />}
-      </Link>
-      <div className="flex flex-col justify-center md:order-1">
+    <article className={`grid gap-4 md:gap-6 ${story.image ? "md:grid-cols-[3fr_2fr]" : ""}`}>
+      {story.image && (
+        <Link href={paths.article(locale, story.slug)} className="card-link block" tabIndex={-1} aria-hidden="true">
+          <StoryImage image={story.image} sizes="(min-width: 1280px) 560px, (min-width: 768px) 55vw, 100vw" preload />
+        </Link>
+      )}
+      <div className="flex min-w-0 flex-col justify-center">
         <Kicker locale={locale} story={story} />
         <Link href={paths.article(locale, story.slug)} className="card-link">
-          <h2 className="headline mt-1 text-[1.75rem] sm:text-4xl lg:text-[2.6rem]">{story.title}</h2>
+          <h2 className="headline mt-1 text-[1.6rem] sm:text-3xl xl:text-[2.3rem]">{story.title}</h2>
         </Link>
-        {story.summary && <p className="mt-3 text-base text-ink-2 sm:text-lg">{story.summary}</p>}
+        {story.summary && <p className="mt-3 line-clamp-4 text-base text-ink-2">{story.summary}</p>}
         <StoryMeta locale={locale} story={story} showAuthors />
       </div>
     </article>

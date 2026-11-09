@@ -86,7 +86,6 @@ export default async function ArticlePage({ params }: PageProps<"/[locale]/news/
   const crumbs = [
     ...(category?.parent ? [{ name: category.parent.name, path: paths.category(locale, category.parent.slug) }] : []),
     ...(a.category ? [{ name: a.category.name, path: paths.category(locale, a.category.slug) }] : []),
-    { name: a.title },
   ];
   const translation = a.translations.find((tr) => tr.locale === otherLocale(locale));
   const url = absolute(paths.article(locale, a.slug));

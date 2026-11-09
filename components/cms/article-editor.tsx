@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers";
 import { apiFetch, ApiError } from "@/lib/client-api";
 import { paths } from "@/lib/urls";
 import { formatWhen, fromLocalInput, staffName, toLocalInput, useApi, type CmsArticle, type CmsCategory, type CmsMedia, type CmsStaff, type CmsTag } from "./hooks";
@@ -91,12 +92,106 @@ function payload(f: Form, canCurate: boolean) {
 
 const AUTOSAVE_MS = 4000;
 
-export function ArticleEditor({ id }: { id: string }) {
+/** A story that exists only in this browser until its first save. */
+const blankArticle = (locale: "bn" | "en"): CmsArticle => ({
+  id: "",
+  locale,
+  translationGroup: "",
+  status: "draft",
+  format: "standard",
+  title: "",
+  slug: "",
+  previousSlugs: [],
+  summary: "",
+  body: "",
+  category: null,
+  tags: [],
+  authors: [],
+  featuredImage: null,
+  seo: {},
+  isFeatured: false,
+  isEditorsPick: false,
+  pinnedUntil: null,
+  breakingUntil: null,
+  scheduledFor: null,
+  publishedAt: null,
+  contentUpdatedAt: null,
+  editorialNotes: [],
+  version: 0,
+  updatedAt: "",
+  translations: [],
+  checklist: [],
+  permissions: { canEdit: true, canPublish: false, canCurate: false, canDelete: false, actions: [] },
+});
+
+type TabTarget = { switchTo: "bn" | "en" } | { href: string; missing?: boolean };
+
+/** Bangla | English at the top of the editor: switches language, opens the other version or starts it. */
+function LanguageTabs({
+  current,
+  label,
+  names,
+  missingHint,
+  target,
+  onSwitch,
+  beforeLeave,
+}: {
+  current: "bn" | "en";
+  label: string;
+  names: Record<"bn" | "en", string>;
+  missingHint: string;
+  target: (l: "bn" | "en") => TabTarget;
+  onSwitch: (l: "bn" | "en") => void;
+  beforeLeave: () => Promise<void>;
+}) {
+  const router = useRouter();
+  return (
+    <div role="group" aria-label={label} className="inline-flex overflow-hidden rounded border border-rule-strong text-sm font-semibold">
+      {(["bn", "en"] as const).map((l) => {
+        if (l === current) {
+          return (
+            <span key={l} aria-current="true" lang={l} className="bg-brand px-4 py-2 text-brand-ink">
+              {names[l]}
+            </span>
+          );
+        }
+        const to = target(l);
+        const missing = "href" in to && to.missing;
+        return (
+          <button
+            key={l}
+            type="button"
+            lang={l}
+            title={missing ? missingHint : undefined}
+            className="px-4 py-2 hover:bg-surface-2"
+            onClick={async () => {
+              if ("switchTo" in to) return onSwitch(to.switchTo);
+              await beforeLeave();
+              router.push(to.href);
+            }}
+          >
+            {names[l]}
+            {missing ? " +" : ""}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * The whole story is written on one page. Without an id the editor starts
+ * empty and creates the draft on the first save (or autosave once there is a
+ * headline), then carries on in place with the full workflow.
+ */
+export function ArticleEditor({ id, newLocale = "bn", translationOf }: { id?: string; newLocale?: "bn" | "en"; translationOf?: string }) {
   const t = useTranslations("cms");
   const uiLocale = useLocale() as "bn" | "en";
   const router = useRouter();
-  const [article, setArticle] = useState<CmsArticle | null>(null);
-  const [form, setForm] = useState<Form | null>(null);
+  const { me } = useAuth();
+  // A new story starts as an empty form right away; an existing one loads below.
+  const [article, setArticle] = useState<CmsArticle | null>(() => (id ? null : blankArticle(newLocale)));
+  const [form, setForm] = useState<Form | null>(() => (id ? null : toForm(blankArticle(newLocale))));
   const [dirty, setDirty] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "autosaved" | "failed" | "conflict">("idle");
   const [error, setError] = useState<string | null>(null);
@@ -130,6 +225,33 @@ export function ArticleEditor({ id }: { id: string }) {
 
   useEffect(() => {
     let alive = true;
+    if (!id) {
+      // A translation starts with the source story's section, tags, bylines and picture.
+      if (translationOf) {
+        apiFetch<{ data: CmsArticle }>(`/admin/articles/${translationOf}`)
+          .then(({ data: src }) => {
+            if (!alive) return;
+            setForm((f) =>
+              f
+                ? {
+                    ...f,
+                    format: src.format,
+                    category: src.category ?? "",
+                    tags: src.tags,
+                    authors: src.authors,
+                    featuredImage: src.featuredImage,
+                    imageCredit: src.imageCredit ?? "",
+                    videoUrl: src.videoUrl ?? "",
+                  }
+                : f,
+            );
+          })
+          .catch(() => undefined);
+      }
+      return () => {
+        alive = false;
+      };
+    }
     apiFetch<{ data: CmsArticle }>(`/admin/articles/${id}`)
       .then((res) => {
         if (!alive) return;
@@ -140,7 +262,7 @@ export function ArticleEditor({ id }: { id: string }) {
     return () => {
       alive = false;
     };
-  }, [id, t]);
+  }, [id, t, translationOf]);
 
   // Labels for selected tags: the full tag list, current search results and tags created here.
   const tagLabels = useMemo(() => {
@@ -164,19 +286,31 @@ export function ArticleEditor({ id }: { id: string }) {
   }, [featuredId, loadedImage?.id]);
   const image = featuredId && loadedImage?.id === featuredId ? loadedImage : null;
 
+  const isNew = Boolean(article && !article.id);
   const editable = Boolean(article?.permissions.canEdit);
-  const canCurate = Boolean(article?.permissions.canCurate);
+  const canCurate = isNew ? Boolean(me?.permissions.includes("homepage:manage")) : Boolean(article?.permissions.canCurate);
 
   const save = useCallback(
     async (mode: "manual" | "autosave") => {
       if (!article || !form || saving.current) return;
+      if (!article.id && !form.title.trim()) {
+        if (mode === "manual") setError(t("editor.needHeadline"));
+        return;
+      }
       saving.current = true;
       setSaveState("saving");
       try {
-        const res = await apiFetch<{ data: CmsArticle }>(`/admin/articles/${article.id}`, {
-          method: "PATCH",
-          body: { ...payload(form, canCurate), version: article.version, revision: mode, ...(markUpdated ? { markUpdated: true } : {}) },
-        });
+        const res = article.id
+          ? await apiFetch<{ data: CmsArticle }>(`/admin/articles/${article.id}`, {
+              method: "PATCH",
+              body: { ...payload(form, canCurate), version: article.version, revision: mode, ...(markUpdated ? { markUpdated: true } : {}) },
+            })
+          : await apiFetch<{ data: CmsArticle }>("/admin/articles", {
+              method: "POST",
+              body: { ...payload(form, canCurate), locale: article.locale, ...(translationOf ? { translationOf } : {}) },
+            });
+        // A new draft keeps being edited right here; only the address changes.
+        if (!article.id) window.history.replaceState(null, "", paths.admin(uiLocale, `articles/${res.data.id}`));
         setArticle(res.data);
         // Keep what the user typed meanwhile; only adopt server-normalised slug and version.
         setForm((f) => (f ? { ...f, slug: res.data.slug } : f));
@@ -194,7 +328,7 @@ export function ArticleEditor({ id }: { id: string }) {
         saving.current = false;
       }
     },
-    [article, form, canCurate, markUpdated, t],
+    [article, form, canCurate, markUpdated, t, translationOf, uiLocale],
   );
 
   // Autosave drafts only. Published stories are saved explicitly, so nothing goes live by accident.
@@ -290,8 +424,24 @@ export function ArticleEditor({ id }: { id: string }) {
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
+          <LanguageTabs
+            current={article.locale}
+            label={t("editor.language")}
+            names={{ bn: t("common.bangla"), en: t("common.english") }}
+            missingHint={t("editor.translationMissing")}
+            target={(l) => {
+              if (isNew && !translationOf) return { switchTo: l };
+              const existing = article.translations.find((tr) => tr.locale === l);
+              if (existing) return { href: paths.admin(uiLocale, `articles/${existing.id}`) };
+              if (isNew && translationOf) return { href: paths.admin(uiLocale, `articles/${translationOf}`) };
+              return { href: `${paths.admin(uiLocale, "articles/new")}?translationOf=${article.id}&locale=${l}`, missing: true };
+            }}
+            onSwitch={(l) => setArticle((a) => (a ? { ...a, locale: l } : a))}
+            beforeLeave={async () => {
+              if (dirty && editable) await save("manual");
+            }}
+          />
           <StatusBadge status={article.status} />
-          <span className="rounded bg-surface-2 px-2 py-0.5 text-xs font-semibold uppercase">{article.locale}</span>
           <span role="status" aria-live="polite" className="text-sm text-muted">
             {statusText}
           </span>
@@ -302,6 +452,8 @@ export function ArticleEditor({ id }: { id: string }) {
           )}
         </div>
         <div className="flex flex-wrap gap-2">
+          {!isNew && (
+          <>
           <a href={`/${article.locale}/admin/preview/${article.id}`} target="_blank" rel="noopener" className={btn}>
             {t("editor.preview")}
           </a>
@@ -342,9 +494,11 @@ export function ArticleEditor({ id }: { id: string }) {
               {t("tools.delete")}
             </button>
           )}
+          </>
+          )}
           {editable && (
             <button type="button" className={btnPrimary} onClick={() => void save("manual")} disabled={saveState === "saving"}>
-              {t("common.save")}
+              {isNew ? t("editor.saveDraft") : t("common.save")}
             </button>
           )}
         </div>
@@ -425,6 +579,8 @@ export function ArticleEditor({ id }: { id: string }) {
             />
           </Panel>
 
+          {!isNew && (
+          <>
           <Panel title={t("editor.notes")}>
             <ul className="mb-3 space-y-2 text-sm">
               {article.editorialNotes.map((n) => (
@@ -498,11 +654,21 @@ export function ArticleEditor({ id }: { id: string }) {
               </ul>
             )}
           </Panel>
+          </>
+          )}
         </div>
 
         <aside className="space-y-4">
           <Panel title={t("editor.workflow")}>
             <div className="flex flex-col gap-2">
+              {isNew && (
+                <>
+                  <button type="button" className={btnPrimary} onClick={() => void save("manual")} disabled={saveState === "saving"}>
+                    {t("editor.saveDraft")}
+                  </button>
+                  <p className="text-sm text-muted">{t("editor.newHint")}</p>
+                </>
+              )}
               {article.permissions.actions
                 .filter((a) => a !== "schedule")
                 .map((a) => (
@@ -557,12 +723,16 @@ export function ArticleEditor({ id }: { id: string }) {
                 {t("editor.category")}
                 <select value={form.category} onChange={(e) => update("category", e.target.value)} disabled={!editable} className={field}>
                   <option value="">{t("editor.chooseCategory")}</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.parent ? "— " : ""}
-                      {c.name[uiLocale]}
-                    </option>
-                  ))}
+                  {/* Names in the story's own language, each subsection right under its parent. */}
+                  {categories
+                    .filter((c) => !c.parent)
+                    .flatMap((p) => [p, ...categories.filter((c) => c.parent === p.id)])
+                    .map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.parent ? "\u00a0\u00a0\u00a0— " : ""}
+                        {c.name[lang] || c.name[lang === "bn" ? "en" : "bn"]}
+                      </option>
+                    ))}
                 </select>
               </label>
               <label className="text-sm">
@@ -760,6 +930,7 @@ export function ArticleEditor({ id }: { id: string }) {
             </Panel>
           )}
 
+          {!isNew && (
           <Panel title={t("editor.translations")}>
             {translation ? (
               <Link href={paths.admin(uiLocale, `articles/${translation.id}`)} className="text-link underline" lang={translation.locale}>
@@ -772,6 +943,7 @@ export function ArticleEditor({ id }: { id: string }) {
             )}
             <p className="mt-2 text-xs text-muted">{t("editor.translationNote")}</p>
           </Panel>
+          )}
         </aside>
       </div>
     </div>

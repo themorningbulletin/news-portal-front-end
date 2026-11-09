@@ -57,7 +57,9 @@
     "visual": "Photos & video",
     "opinion": "Opinion",
     "moreIn": "More in {section}",
-    "empty": "No stories have been published yet."
+    "empty": "No stories have been published yet.",
+    "more": "More",
+    "editorsPick": "Editor's Pick"
   },
   "article": {
     "share": "Share",
@@ -81,7 +83,14 @@
     "playVideo": "Play video",
     "videoNotice": "The video plays from {host}, which may set its own cookies.",
     "updatedNote": "This story has been updated since it was first published.",
-    "translationAvailable": "এই খবর বাংলায় পড়ুন"
+    "translationAvailable": "এই খবর বাংলায় পড়ুন",
+    "shareFacebook": "Share on Facebook",
+    "shareX": "Post on X",
+    "shareWhatsApp": "Share on WhatsApp",
+    "shareEmail": "Share by email",
+    "shareShort": "Share",
+    "post": "Post",
+    "email": "Email"
   },
   "list": {
     "page": "Page {page}",
@@ -227,9 +236,12 @@
       "editorial-policy": "Editorial policy",
       "corrections": "Corrections",
       "privacy": "Privacy policy",
-      "terms": "Terms of use"
+      "terms": "Terms of use",
+      "advertise": "Advertise"
     },
-    "consentSettings": "Cookie and ad choices"
+    "consentSettings": "Cookie and ad choices",
+    "follow": "Follow us",
+    "newTab": "opens in a new tab"
   },
   "consent": {
     "title": "Your privacy choices",
@@ -247,8 +259,10 @@
       "category_feed": "List feed",
       "article_inline": "Inside the story",
       "sidebar": "Sidebar",
-      "footer": "Above the footer"
-    }
+      "footer": "Above the footer",
+      "sticky_bottom": "Fixed at the bottom"
+    },
+    "close": "Close advertisement"
   },
   "errors": {
     "notFoundTitle": "Page not found",
@@ -259,5 +273,40 @@
     "noAccessTitle": "You do not have access to this area",
     "noAccessBody": "Your account is not allowed to use this part of the newsroom. Ask an administrator if you need access.",
     "myAccount": "My account"
+  },
+  "prayer": {
+    "button": "Prayer times",
+    "title": "Prayer times",
+    "close": "Close prayer times",
+    "next": "Next",
+    "nextShort": "Next",
+    "now": "Now",
+    "jumuah": "Jumu'ah",
+    "leftHours": "{h} h {m} min to go",
+    "leftMinutes": "{m} min to go",
+    "place": "Location",
+    "myLocation": "Use my location",
+    "geoError": "Your location could not be read. Choose a city instead.",
+    "sehriIftar": "Sehri ends: {sehri} · Iftar: {iftar}",
+    "method": "Calculated for the chosen place (Karachi method, Hanafi Asr), as followed in Bangladesh. Times may differ by a minute or two from your local mosque.",
+    "names": {
+      "fajr": "Fajr",
+      "sunrise": "Sunrise",
+      "dhuhr": "Dhuhr",
+      "asr": "Asr",
+      "maghrib": "Maghrib",
+      "isha": "Isha"
+    },
+    "cities": {
+      "dhaka": "Dhaka",
+      "chattogram": "Chattogram",
+      "khulna": "Khulna",
+      "rajshahi": "Rajshahi",
+      "sylhet": "Sylhet",
+      "barishal": "Barishal",
+      "rangpur": "Rangpur",
+      "mymensingh": "Mymensingh"
+    },
+    "hijri": "AH"
   }
 }

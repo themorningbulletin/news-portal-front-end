@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
-import { AdSlot, AdsProvider } from "@/components/site/consent";
+import { AdSlot, AdsProvider, StickyAd } from "@/components/site/consent";
 import { SiteFooter } from "@/components/site/footer";
 import { BreakingTicker, SiteHeader } from "@/components/site/header";
+import { PrayerTimes } from "@/components/site/prayer-times";
 import { getAdPlacements, getBreaking, getCategories, getPublishedPages, getSiteConfig } from "@/lib/api";
 import { ADSENSE_CLIENT, DEMO_ADS, isLocale } from "@/lib/config";
 
@@ -35,7 +36,10 @@ export default async function SiteLayout({ children, params }: LayoutProps<"/[lo
         pages={pages}
         newsletterEnabled={config.features.newsletter}
         adsEnabled={Boolean(ADSENSE_CLIENT && placements.length) && !DEMO_ADS}
+        social={config.social ?? {}}
       />
+      <StickyAd />
+      <PrayerTimes />
     </AdsProvider>
   );
 }

@@ -196,7 +196,11 @@
     "uploading": "Uploading…",
     "uploadFailed": "The image could not be uploaded. Check the file and try again.",
     "addTagButton": "Add",
-    "addTagHelp": "Type a tag and press Enter or Add. It is created if it does not exist."
+    "addTagHelp": "Type a tag and press Enter or Add. It is created if it does not exist.",
+    "needHeadline": "Write a headline first, then save.",
+    "saveDraft": "Save draft",
+    "newHint": "Write the headline, summary and story on this page. After the first save the publish and review buttons appear here.",
+    "translationMissing": "No version in this language yet: click to start one"
   },
   "toolbar": {
     "bold": "Bold",
@@ -213,7 +217,16 @@
     "redo": "Redo",
     "image": "Image",
     "imageUploading": "Uploading…",
-    "imageAltPrompt": "Describe the image (alt text) for people who cannot see it"
+    "imageAltPrompt": "Describe the image (alt text) for people who cannot see it",
+    "underline": "Underline",
+    "strike": "Strikethrough",
+    "h4": "Minor heading",
+    "alignLeft": "Align left",
+    "alignCenter": "Centre",
+    "alignRight": "Align right",
+    "alignJustify": "Justify",
+    "divider": "Divider line",
+    "clear": "Clear formatting"
   },
   "media": {
     "upload": "Upload image",
@@ -259,20 +272,70 @@
     "tagNameEn": "English name",
     "tagExists": "A tag with this name already exists.",
     "editTag": "Rename",
-    "missingHint": "Tags with a red dashed border are missing a name in one language. Click to add it."
+    "missingHint": "Tags with a red dashed border are missing a name in one language. Click to add it.",
+    "slugAuto": "Leave empty to make it from the name",
+    "addSub": "Subsection",
+    "addSubTo": "New subsection under {name}",
+    "slugAutoNote": "made from the name automatically",
+    "slugRegenerate": "Make from the name",
+    "slugEdit": "Change by hand",
+    "deleteTitle": "Delete this section",
+    "deleteHasChildren": "This section has subsections. Delete them, or move them under another section, before deleting it.",
+    "moveStories": "Move its {count} stories to",
+    "delete": "Delete section",
+    "deleteConfirm": "Delete the section “{name}” for good? Its stories move to the section you chose, and it is removed from the menu and the homepage."
   },
   "homepage": {
     "intro": "Choose which sections appear on the homepage, in what order and with which layout. The lead story, top stories and breaking banner are set from each story’s homepage controls.",
     "add": "Add section",
     "variant": "Layout",
     "variants": {
-      "feature": "Large image + list",
-      "grid": "Card grid",
-      "list": "List"
+      "feature": "Big story left + list",
+      "center": "Big story in the middle",
+      "grid": "Cards side by side",
+      "list": "Picture list",
+      "mosaic": "Big story on top + list",
+      "side": "List left + big story right",
+      "trio": "Three columns"
     },
     "moveUp": "Move up",
     "moveDown": "Move down",
-    "remove": "Remove"
+    "remove": "Remove",
+    "intro2": "Build the homepage below the first block. Blocks fill rows of 12 columns in order: for example three quarters + one quarter, or four quarters. A section block shows that section and its subsections. The first block (lead story, three more and Most read) is set from each story's homepage controls.",
+    "blocks": "Homepage blocks",
+    "firstBlock": "1st block (fixed): Editor's Pick on the left (lead story + three more), Most read on the right.",
+    "ad": "Advertisement",
+    "style": "Style",
+    "width": "Width",
+    "count": "Stories",
+    "widths": {
+      "w12": "Full row",
+      "w9": "3/4 of a row",
+      "w8": "2/3 of a row",
+      "w6": "Half a row",
+      "w4": "1/3 of a row",
+      "w3": "1/4 of a row",
+      "w2": "1/6 of a row"
+    },
+    "variantHelp": {
+      "feature": "Large picture and headline on the left, the other stories as a picture list on the right.",
+      "center": "Large story in the middle with lists on both sides (on narrow blocks: big story, then list).",
+      "grid": "Cards side by side; a narrow block shows two or three small cards in a row.",
+      "list": "Headlines with small pictures, like a side column.",
+      "mosaic": "Large story on top with the rest underneath; good for quarter-width blocks.",
+      "side": "Stories stacked on the left, the large story on the right (like Opinion and World in the sketch).",
+      "trio": "Large story, two stacked stories, then one more, side by side (like Business in the sketch)."
+    },
+    "published": "Published stories: Bangla {bn} · English {en}",
+    "hiddenIn": "This block stays hidden in {langs} until a story is published in this section",
+    "countAfterSave": "Story counts appear after saving.",
+    "addSection": "Add section block",
+    "addAd": "Add ad block",
+    "savedNote": "Saved. The homepage updates within a minute.",
+    "preview": "Layout preview",
+    "previewNote": "How the blocks fall into rows on a large screen. On phones every block is full width, one under another.",
+    "leadBlock": "Lead story + 3",
+    "mostRead": "Most read"
   },
   "users": {
     "email": "Email",
@@ -320,7 +383,8 @@
       "category_feed": "List feeds",
       "article_inline": "Inside stories",
       "sidebar": "Sidebar",
-      "footer": "Footer"
+      "footer": "Footer",
+      "sticky_bottom": "Fixed at the bottom of the screen (stays while scrolling)"
     }
   },
   "pages": {
@@ -329,7 +393,10 @@
     "title": "Title",
     "body": "Content",
     "published": "Published",
-    "notCreated": "Not created"
+    "notCreated": "Not created",
+    "social": "Social media links (footer)",
+    "socialIntro": "Paste the full https link of each profile. The icon appears in the site footer; leave a box empty to hide that icon.",
+    "socialInvalid": "Each link must be a full https:// address."
   },
   "audit": {
     "when": "When",

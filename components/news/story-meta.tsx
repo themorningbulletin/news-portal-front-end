@@ -28,11 +28,9 @@ export function StoryMeta({ locale, story, showAuthors = false }: { locale: Loca
 }
 
 export function Byline({ locale, story }: { locale: Locale; story: ArticleCard }) {
-  const t = getT(locale, "common");
   if (story.authors.length === 0) return null;
   return (
     <p className="text-sm text-ink-2">
-      {t("by")}{" "}
       {story.authors.map((a, i) => (
         <span key={a.id}>
           {i > 0 && ", "}

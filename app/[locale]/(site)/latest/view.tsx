@@ -26,7 +26,7 @@ export function LatestView({ rawLocale, page }: { rawLocale: string; page: numbe
   return (
     <>
       <AlternateLink href={paths.latest(otherLocale(locale))} />
-      <div className="mx-auto max-w-4xl">
+      <div>
         <PageHeader title={t("latestTitle")} description={t("latestDescription")} />
         <PagedList locale={locale} page={page} query={{}} basePath={paths.latest(locale)} adPlacement="category_feed" />
       </div>

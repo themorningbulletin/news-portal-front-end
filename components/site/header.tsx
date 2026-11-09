@@ -5,6 +5,7 @@ import { getT } from "@/lib/i18n";
 import type { ArticleCard, Category } from "@/lib/types";
 import { paths } from "@/lib/urls";
 import { AccountButton, LanguageSwitch, ThemeToggle, TodayDate } from "./header-controls";
+import { NavDropdown } from "./nav-dropdown";
 import { SectionsMenu } from "./sections-menu";
 
 function Wordmark({ locale }: { locale: Locale }) {
@@ -23,6 +24,7 @@ export function SiteHeader({ locale, categories }: { locale: Locale; categories:
   const t = getT(locale, "nav");
   const common = getT(locale, "common");
   const top = categories.filter((c) => !c.parentId);
+  const childrenOf = (id: string) => categories.filter((c) => c.parentId === id);
 
   return (
     <header data-site-header className="border-b border-rule bg-paper">
@@ -64,26 +66,41 @@ export function SiteHeader({ locale, categories }: { locale: Locale; categories:
 
       <nav aria-label={t("primary")} className="border-t border-rule">
         <div className="mx-auto flex max-w-7xl items-stretch px-2 sm:px-4">
-          {/* Sections scroll horizontally on small screens; the full list is one tap away. */}
-          <ul className="flex flex-1 gap-1 overflow-x-auto py-1 [scrollbar-width:none]">
+          {/* Sections scroll horizontally on small screens (the full list is one tap away); on large
+              screens they wrap and each one opens its subsections on hover or keyboard focus. */}
+          <ul className="flex flex-1 gap-1 overflow-x-auto py-1 [scrollbar-width:none] lg:flex-wrap lg:overflow-visible">
             <li>
               <Link href={paths.latest(locale)} className="inline-flex min-h-11 items-center whitespace-nowrap rounded px-3 text-[0.9375rem] font-semibold hover:bg-surface-2">
                 {t("latest")}
               </Link>
             </li>
-            {top.map((c) => (
-              <li key={c.id}>
-                <Link href={paths.category(locale, c.slug)} className="inline-flex min-h-11 items-center whitespace-nowrap rounded px-3 text-[0.9375rem] hover:bg-surface-2">
-                  {c.name}
-                </Link>
-              </li>
-            ))}
+            {top.map((c) => {
+              const subs = childrenOf(c.id);
+              return subs.length > 0 ? (
+                <NavDropdown
+                  key={c.id}
+                  href={paths.category(locale, c.slug)}
+                  label={c.name}
+                  items={subs.map((sub) => ({ href: paths.category(locale, sub.slug), label: sub.name }))}
+                />
+              ) : (
+                <li key={c.id}>
+                  <Link href={paths.category(locale, c.slug)} className="inline-flex min-h-11 items-center whitespace-nowrap rounded px-3 text-[0.9375rem] hover:bg-surface-2">
+                    {c.name}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
           <SectionsMenu
             label={t("allSections")}
             openLabel={t("menuOpen")}
             closeLabel={t("closeMenu")}
-            sections={categories.map((c) => ({ href: paths.category(locale, c.slug), label: c.name, sub: Boolean(c.parentId) }))}
+            groups={top.map((c) => ({
+              href: paths.category(locale, c.slug),
+              label: c.name,
+              children: childrenOf(c.id).map((sub) => ({ href: paths.category(locale, sub.slug), label: sub.name })),
+            }))}
             extra={[
               { href: paths.latest(locale), label: t("latest") },
               { href: paths.topics(locale), label: t("topics") },

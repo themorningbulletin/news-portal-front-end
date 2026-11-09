@@ -104,19 +104,62 @@ export function ReaderControls() {
   );
 }
 
+/* Share links open the network's own share page; nothing loads from them until the reader clicks. */
+const shareBtn = "inline-flex min-h-10 items-center gap-2 rounded px-3.5 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2";
+const ICON = {
+  facebook: "M14 8.5V6.6c0-.8.2-1.3 1.4-1.3H17V2.2C16.7 2.1 15.6 2 14.4 2 11.8 2 10 3.6 10 6.4v2.1H7.3v3.4H10V22h4V11.9h2.8l.4-3.4Z",
+  x: "M17.8 3h3l-6.6 7.5L22 21h-6.1l-4.8-6.2L5.6 21H2.6l7-8L2 3h6.2l4.3 5.7Zm-1 16.2h1.7L7.3 4.7H5.5Z",
+  whatsapp: "M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.3 14.1c-.2.6-1.3 1.2-1.8 1.3-.5 0-1 .2-3.3-.7-2.8-1.1-4.5-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.3.5-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.6-.1l.9-1c.2-.3.4-.2.6-.1l1.9.9c.3.1.4.2.5.3.1.2.1.6-.1 1.2Z",
+};
+
+function Glyph({ d }: { d: string }) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+      <path d={d} />
+    </svg>
+  );
+}
+
 export function ShareActions({ url, title }: { url: string; title: string }) {
   const t = useTranslations("article");
   const [copied, setCopied] = useState(false);
   const canShare = useBrowserConstant(() => "share" in navigator, false);
+  const u = encodeURIComponent(url);
+  const text = encodeURIComponent(title);
+  const links = [
+    { key: "facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${u}`, label: t("shareFacebook"), text: t("shareShort"), color: "bg-[#1461c8]", icon: ICON.facebook },
+    { key: "x", href: `https://x.com/intent/post?url=${u}&text=${text}`, label: t("shareX"), text: t("post"), color: "bg-[#111]", icon: ICON.x },
+    { key: "whatsapp", href: `https://wa.me/?text=${text}%20${u}`, label: t("shareWhatsApp"), text: t("shareShort"), color: "bg-[#13773f]", icon: ICON.whatsapp },
+  ];
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {links.map((l) => (
+        <a key={l.key} href={l.href} target="_blank" rel="noopener noreferrer" aria-label={l.label} title={l.label} className={`${shareBtn} ${l.color}`}>
+          <Glyph d={l.icon} />
+          <span className="hidden sm:inline">{l.text}</span>
+        </a>
+      ))}
+      <a href={`mailto:?subject=${text}&body=${text}%0A${u}`} aria-label={t("shareEmail")} title={t("shareEmail")} className={`${shareBtn} bg-[#555b63]`}>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+          <rect x="3" y="5" width="18" height="14" rx="2" />
+          <path d="m3 7 9 6 9-6" />
+        </svg>
+        <span className="hidden sm:inline">{t("email")}</span>
+      </a>
       {canShare && (
         <button
           type="button"
-          className={btn}
+          aria-label={t("shareNative")}
+          title={t("shareNative")}
+          className={`${shareBtn} bg-[#4d7c0f]`}
           onClick={() => navigator.share({ title, url }).catch(() => undefined)}
         >
-          {t("shareNative")}
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <circle cx="18" cy="5" r="2.5" />
+            <circle cx="6" cy="12" r="2.5" />
+            <circle cx="18" cy="19" r="2.5" />
+            <path d="m8.2 10.8 7.6-4.6M8.2 13.2l7.6 4.6" />
+          </svg>
         </button>
       )}
       <button
@@ -140,7 +183,7 @@ export function ShareActions({ url, title }: { url: string; title: string }) {
       >
         {t("copyLink")}
       </button>
-      <button type="button" className={btn} onClick={() => window.print()}>
+      <button type="button" className={`${shareBtn} bg-[#1d4ed8]`} onClick={() => window.print()}>
         {t("print")}
       </button>
       <span role="status" className="text-sm text-brand">

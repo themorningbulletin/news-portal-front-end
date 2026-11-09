@@ -47,7 +47,7 @@ export async function AuthorView({ rawLocale, rawSlug, page }: { rawLocale: stri
           },
         }}
       />
-      <div className="mx-auto max-w-4xl">
+      <div>
         <Breadcrumbs locale={locale} items={[{ name: author.name }]} />
         <div className="mt-4">
           <PageHeader title={author.name} description={author.bio || t("authorDescription", { name: author.name })} />

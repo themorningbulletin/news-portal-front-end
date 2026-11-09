@@ -7,7 +7,10 @@ import { useEffect, useId, useRef, useState } from "react";
 interface MenuLink {
   href: string;
   label: string;
-  sub?: boolean;
+}
+
+interface MenuGroup extends MenuLink {
+  children: MenuLink[];
 }
 
 /**
@@ -18,13 +21,13 @@ export function SectionsMenu({
   label,
   openLabel,
   closeLabel,
-  sections,
+  groups,
   extra,
 }: {
   label: string;
   openLabel: string;
   closeLabel: string;
-  sections: MenuLink[];
+  groups: MenuGroup[];
   extra: MenuLink[];
 }) {
   const [open, setOpen] = useState(false);
@@ -84,14 +87,26 @@ export function SectionsMenu({
       {open && (
         <div
           id={panelId}
-          className="fixed inset-x-0 top-auto z-40 mt-1 max-h-[75vh] overflow-y-auto border-y border-rule bg-surface p-3 shadow-card sm:absolute sm:inset-x-auto sm:right-0 sm:w-[24rem] sm:rounded-md sm:border"
+          className="fixed inset-x-0 top-auto z-40 mt-1 max-h-[75vh] overflow-y-auto border-y border-rule bg-surface p-3 shadow-card sm:absolute sm:inset-x-auto sm:right-0 sm:w-[32rem] sm:rounded-md sm:border"
         >
-          <ul className="grid grid-cols-2 gap-1">
-            {sections.map((s) => (
-              <li key={s.href}>
-                <Link href={s.href} onClick={close} className={`${item} ${s.sub ? "pl-6 text-ink-2" : "font-semibold"}`}>
-                  {s.label}
+          {/* Each section with its subsections underneath. */}
+          <ul className="columns-2 gap-2">
+            {groups.map((g) => (
+              <li key={g.href} className="mb-2 break-inside-avoid">
+                <Link href={g.href} onClick={close} className={`${item} font-semibold`}>
+                  {g.label}
                 </Link>
+                {g.children.length > 0 && (
+                  <ul className="ml-3 border-l border-rule">
+                    {g.children.map((c) => (
+                      <li key={c.href}>
+                        <Link href={c.href} onClick={close} className="block rounded px-3 py-2 text-sm text-ink-2 hover:bg-surface-2">
+                          {c.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ul>

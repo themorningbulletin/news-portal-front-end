@@ -8,14 +8,14 @@
 /* ------------------------------------------------------------------ */
 :root {
   color-scheme: light;
-  --paper: #fbf8f2;
+  --paper: #eef7fd;
   --surface: #ffffff;
-  --surface-2: #f3eee4;
+  --surface-2: #e2f0fa;
   --ink: #17191c;
   --ink-2: #3d4249;
   --muted: #5d636c;
-  --rule: #e2dccf;
-  --rule-strong: #c9c0ad;
+  --rule: #cfe2ef;
+  --rule-strong: #a8c6da;
   --brand: #0b6e4f;
   --brand-ink: #ffffff;
   --brand-soft: #e3f1ea;
@@ -228,6 +228,8 @@
   }
   .prose-news h2 { font-size: 1.35em; }
   .prose-news h3 { font-size: 1.18em; }
+  .prose-news h4 { font-size: 1.05em; }
+  .prose-news hr.ProseMirror-selectednode { outline: 2px solid var(--brand); }
   .prose-news a {
     color: var(--link);
     text-decoration: underline;

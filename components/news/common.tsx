@@ -18,12 +18,12 @@ export function Breadcrumbs({ locale, items }: { locale: Locale; items: { name: 
         {all.map((it, i) => (
           <li key={i} className="flex items-center gap-2">
             {i > 0 && <span aria-hidden="true">›</span>}
-            {it.path && i < all.length - 1 ? (
+            {it.path ? (
               <Link href={it.path} className="hover:text-ink hover:underline">
                 {it.name}
               </Link>
             ) : (
-              <span aria-current={i === all.length - 1 ? "page" : undefined}>{it.name}</span>
+              <span aria-current="page">{it.name}</span>
             )}
           </li>
         ))}
